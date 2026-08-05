@@ -1,4 +1,4 @@
-# PG Manager — static preview
+# PG Manager
 
 Owner dashboard for a paying-guest property: beds, tenants and rent collection.
 No build step, no framework — plain HTML, CSS and JavaScript, hosted on Cloudflare Pages.
@@ -14,9 +14,36 @@ Live: https://pg.swayamkate.com/
 | `signup.html` | Account creation page |
 | `config.js` | **Supabase project URL and anon key go here** |
 | `auth.js` | Shared auth layer (Supabase, with demo fallback) |
-| `app.js` | Demo data, rendering, tabs, theme and logout |
+| `store.js` | Per-account data store: rooms, tenants, payments, activity |
+| `app.js` | Rendering, dialogs, tabs, theme and logout |
 | `styles.css` | Light + dark theme, all components |
+| `manage.css` | Empty states, dialogs and row actions |
 | `404.html` | Not-found page |
+
+## Data
+
+There is **no sample data anywhere in this app**. Every account signs in to an
+empty property and builds it up through the UI:
+
+1. **Property name** in the header sets the label under the logo.
+2. **Beds → Add room** creates a room with a floor, a bed count (1–8) and a rent
+   per bed.
+3. Clicking a vacant bed, or **Tenants → Add tenant**, moves someone in.
+4. **Rent → Mark paid** records a payment. **On notice** and **Check out** are on
+   each tenant row.
+
+Everything is saved by `store.js` under `localStorage["pgData:<account id>"]`, so
+two different logins never see each other's rooms or tenants. Occupancy, expected
+rent, collections and the activity feed are all derived from what you enter.
+
+Unpaid rent shows as **Due**, and as **Overdue** once the month is past the 10th.
+Paid flags reset automatically at the start of each month.
+
+### Limits of browser storage
+
+The data lives in one browser on one device. Clearing site data wipes it, and it
+does not sync between your phone and laptop. Moving the rooms and tenants into
+Supabase tables is the next step — see below.
 
 ## Connecting Supabase
 
@@ -45,6 +72,9 @@ The `anon` key is designed to be public and shipped to the browser — access is
 restricted by Row Level Security. **Never put the `service_role` key in this
 repo**; it bypasses all security rules.
 
+Only sign-in and sign-up talk to Supabase today. Rooms and tenants are still
+browser-side.
+
 ### Email confirmation
 
 Supabase confirms email addresses by default. With it on, sign-up shows
@@ -60,7 +90,8 @@ is clicked. To skip that while demoing, turn off **Confirm email** in
 | Real account | Create one on `signup.html` (email + password, minimum 6 characters) |
 
 The demo login is a deliberate escape hatch so the preview can always be opened.
-Remove it from `auth.js` (`DEMO_ID` / `DEMO_PW`) before real use.
+It starts with an empty property like every other account. Remove it from
+`auth.js` (`DEMO_ID` / `DEMO_PW`) before real use.
 
 ## Demo mode vs Supabase mode
 
@@ -80,15 +111,10 @@ Light and dark palettes are driven by `data-theme` on `<html>`.
 Dark is the default. The toggle in the top-right saves the choice to
 `localStorage["pgTheme"]`, which then overrides the default on every page.
 
-## Data
-
-Beds, tenants, rent and activity all come from the `ROOMS` array in `app.js` —
-12 rooms across 3 floors, 36 beds. There is no database behind the dashboard
-yet; only login and sign-up talk to Supabase.
-
 ## Next steps
 
 - Move rooms, tenants and payments into Supabase tables with Row Level Security
-- Tenant add / edit / move between beds
-- Rent receipts and payment history
+  so data follows the account instead of the browser
+- Edit a tenant, or move one between beds, without checking out first
+- Rent receipts and payment history per month
 - Complaints and expense tracking
