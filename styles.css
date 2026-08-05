@@ -285,6 +285,7 @@ h2{font-size:16px;letter-spacing:-.015em;font-weight:620;margin:0}
 }
 .btn-primary:hover{filter:brightness(1.07)}
 .btn-primary:active{transform:translateY(1px)}
+.btn-primary:disabled{opacity:.6;cursor:default;filter:none;transform:none}
 .btn-primary:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 
 /* ---------- footer ---------- */
