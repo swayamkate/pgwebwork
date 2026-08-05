@@ -17,6 +17,17 @@ Signing in sets a flag in `sessionStorage` and sends you to the dashboard. `inde
 
 > **This is a demo lock, not real security.** The credentials sit in `login.html` and are checked in the browser, so anyone can read them via View Source. Replace this with a server-side login before real tenant data goes in.
 
+## Theme
+
+Light and dark themes ship together. The toggle sits in the header (and top-right of the login page), and the choice is saved to `localStorage`, so it survives reloads.
+
+The palette is defined once as CSS custom properties at the top of `styles.css`:
+
+- `:root, [data-theme="light"]` — light tokens
+- `[data-theme="dark"]` — dark overrides
+
+To rebrand, change `--brand`, `--brand-soft` and `--brand-grad` in both blocks; everything else (buttons, bars, badges, avatars, focus rings) follows automatically.
+
 ## What's in it
 
 | Screen | Shows |
@@ -31,8 +42,8 @@ Signing in sets a flag in `sessionStorage` and sends you to the dashboard. `inde
 ```
 login.html    sign-in page (demo credentials)
 index.html    all four dashboard screens
-styles.css    design system (colors, layout, responsive rules)
-app.js        demo data + rendering + tab navigation + logout
+styles.css    design tokens + all component styles
+app.js        demo data + rendering + navigation + theme/logout
 404.html      fallback page
 ```
 

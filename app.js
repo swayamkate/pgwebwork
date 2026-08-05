@@ -72,21 +72,39 @@ const initials = (name) => name.split(" ").map((p) => p[0]).slice(0, 2).join("")
 const el = (id) => document.getElementById(id);
 const BADGE = { paid: "Paid", due: "Due", late: "Overdue" };
 
+const ICONS = {
+  bed: '<path d="M4 18v-8"/><path d="M4 14h16v4"/><path d="M20 14v-1.5a2 2 0 0 0-2-2h-7V14"/>',
+  users: '<circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.6a3 3 0 0 1 0 4.8"/><path d="M18.5 19a5.6 5.6 0 0 0-2-4"/>',
+  door: '<path d="M6 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/><path d="M4 21h16"/><circle cx="14" cy="12" r=".6"/>',
+  wallet: '<path d="M3 7a2 2 0 0 1 2-2h11v3"/><rect x="3" y="7" width="18" height="12" rx="2.5"/><circle cx="16.5" cy="13" r="1"/>',
+  rupee: '<circle cx="12" cy="12" r="9"/><path d="M9.5 8h5"/><path d="M9.5 10.5h5"/><path d="M13 10.5a2.5 2.5 0 0 1-2.5 2.5H9.5l4 4"/>',
+  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/>',
+};
+
+function statCard(s) {
+  return `
+    <div class="stat">
+      <div class="stat-top">
+        <span class="stat-label">${s.label}</span>
+        <span class="stat-ico ico-${s.tone}">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[s.icon]}</svg>
+        </span>
+      </div>
+      <div class="stat-value">${s.value}</div>
+      <div class="stat-note ${s.cls || ""}">${s.note}</div>
+    </div>`;
+}
+
 /* ---------- render ---------- */
 
 function renderStats() {
   const rate = Math.round((OCCUPIED / BEDS_TOTAL) * 100);
   el("stats").innerHTML = [
-    { label: "Total beds", value: BEDS_TOTAL, note: ROOMS.length + " rooms · 3 floors" },
-    { label: "Occupied", value: OCCUPIED, note: rate + "% occupancy", cls: "up" },
-    { label: "Vacant", value: VACANT, note: ON_NOTICE + " more on notice", cls: "warn" },
-    { label: "Collected in Aug", value: money(COLLECTED), note: money(PENDING) + " pending", cls: "warn" },
-  ].map((s) => `
-    <div class="stat">
-      <div class="stat-label">${s.label}</div>
-      <div class="stat-value">${s.value}</div>
-      <div class="stat-note ${s.cls || ""}">${s.note}</div>
-    </div>`).join("");
+    { label: "Total beds", value: BEDS_TOTAL, note: ROOMS.length + " rooms · 3 floors", icon: "bed", tone: "brand" },
+    { label: "Occupied", value: OCCUPIED, note: rate + "% occupancy", cls: "up", icon: "users", tone: "green" },
+    { label: "Vacant", value: VACANT, note: ON_NOTICE + " more on notice", cls: "warn", icon: "door", tone: "amber" },
+    { label: "Collected in Aug", value: money(COLLECTED), note: money(PENDING) + " pending", cls: "warn", icon: "wallet", tone: "brand" },
+  ].map(statCard).join("");
 }
 
 function renderFloors() {
@@ -161,15 +179,10 @@ function renderTenants() {
 function renderRent() {
   const paid = TENANTS.filter((t) => t.status === "paid").length;
   el("rent-stats").innerHTML = [
-    { label: "Expected", value: money(EXPECTED), note: TENANTS.length + " tenants" },
-    { label: "Collected", value: money(COLLECTED), note: paid + " payments received", cls: "up" },
-    { label: "Pending", value: money(PENDING), note: TENANTS.length - paid + " still to pay", cls: "warn" },
-  ].map((s) => `
-    <div class="stat">
-      <div class="stat-label">${s.label}</div>
-      <div class="stat-value">${s.value}</div>
-      <div class="stat-note ${s.cls || ""}">${s.note}</div>
-    </div>`).join("");
+    { label: "Expected", value: money(EXPECTED), note: TENANTS.length + " tenants", icon: "rupee", tone: "brand" },
+    { label: "Collected", value: money(COLLECTED), note: paid + " payments received", cls: "up", icon: "wallet", tone: "green" },
+    { label: "Pending", value: money(PENDING), note: TENANTS.length - paid + " still to pay", cls: "warn", icon: "clock", tone: "red" },
+  ].map(statCard).join("");
 
   const order = { late: 0, due: 1, paid: 2 };
   el("paylist").innerHTML = [...TENANTS]
@@ -213,7 +226,16 @@ renderTenants();
 renderRent();
 show(location.hash.slice(1) || "dashboard");
 
-/* ---------- session ---------- */
+/* ---------- session + theme ---------- */
+
+const themeBtn = el("theme-toggle");
+if (themeBtn) {
+  themeBtn.addEventListener("click", () => {
+    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem("pgTheme", next); } catch (err) {}
+  });
+}
 
 const logoutBtn = el("logout");
 if (logoutBtn) {
