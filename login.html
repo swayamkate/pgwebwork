@@ -8,6 +8,9 @@
 <script>try{var t=localStorage.getItem("pgTheme");if(t){document.documentElement.dataset.theme=t;}}catch(e){}</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%234F46E5'/%3E%3Cg fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 18v-8'/%3E%3Cpath d='M4 14h16v4'/%3E%3Cpath d='M20 14v-1.5a2 2 0 0 0-2-2h-7V14'/%3E%3C/g%3E%3C/svg%3E" />
 <link rel="stylesheet" href="styles.css" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="auth.js"></script>
 </head>
 <body class="auth-body">
 
@@ -30,8 +33,8 @@
 
     <form id="login-form" novalidate>
       <div class="field">
-        <label for="userid">User ID</label>
-        <input id="userid" name="userid" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="admin" required />
+        <label for="email">Email</label>
+        <input id="email" name="email" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="you@example.com" required />
       </div>
 
       <div class="field">
@@ -39,16 +42,16 @@
         <input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••" required />
       </div>
 
-      <p class="auth-error" id="error" role="alert" hidden>Wrong user ID or password. Try again.</p>
+      <p class="auth-error" id="error" role="alert" hidden></p>
 
-      <button class="btn-primary" type="submit">Sign in</button>
+      <button class="btn-primary" id="submit" type="submit">Sign in</button>
     </form>
 
     <p class="auth-alt">No account yet? <a href="signup.html">Create one</a></p>
 
     <div class="auth-hint">
       <b>Demo access</b>
-      <span>User ID <code>admin</code> · Password <code>pass</code></span>
+      <span>Email <code>admin</code> · Password <code>pass</code></span>
     </div>
   </div>
 
@@ -56,54 +59,44 @@
 </main>
 
 <script>
-  // Preview-only gate. Credentials are checked in the browser, so this is a
-  // demo lock, not real security. Replace with a server login before go-live.
-  var DEMO_ID = "admin";
-  var DEMO_PW = "pass";
-
-  // Accounts created on signup.html are stored in localStorage under "pgUsers".
-  function readUsers() {
-    try {
-      var raw = JSON.parse(localStorage.getItem("pgUsers") || "[]");
-      return Object.prototype.toString.call(raw) === "[object Array]" ? raw : [];
-    } catch (err) {
-      return [];
-    }
-  }
-
-  // Returns the display name on success, or null when nothing matches.
-  function authenticate(id, pw) {
-    if (id === DEMO_ID && pw === DEMO_PW) { return "Owner"; }
-    var users = readUsers();
-    for (var i = 0; i < users.length; i++) {
-      if (users[i].id === id.toLowerCase() && users[i].pw === pw) {
-        return users[i].name || users[i].id;
-      }
-    }
-    return null;
-  }
-
+  // Sign-in is handled by auth.js: Supabase Auth when config.js is filled in,
+  // otherwise the browser-only demo mode.
   var form = document.getElementById("login-form");
   var error = document.getElementById("error");
+  var submit = document.getElementById("submit");
+
+  function busy(on) {
+    submit.disabled = on;
+    submit.textContent = on ? "Signing in…" : "Sign in";
+  }
+
+  function fail(msg) {
+    error.textContent = msg;
+    error.hidden = false;
+    busy(false);
+  }
 
   form.addEventListener("submit", function (e) {
     e.preventDefault();
-    var id = document.getElementById("userid").value.trim();
+
+    var id = document.getElementById("email").value.trim();
     var pw = document.getElementById("password").value;
 
-    var who = authenticate(id, pw);
+    if (!id || !pw) { return fail("Enter your email and password."); }
 
-    if (who) {
-      try {
-        sessionStorage.setItem("pgAuth", "ok");
-        sessionStorage.setItem("pgUser", who);
-      } catch (err) {}
-      location.replace("index.html");
-    } else {
-      error.hidden = false;
+    busy(true);
+
+    PGAuth.signIn(id, pw).then(function (res) {
+      if (res.ok) {
+        location.replace("index.html");
+        return;
+      }
       document.getElementById("password").value = "";
+      fail(res.error || "Wrong email or password. Try again.");
       document.getElementById("password").focus();
-    }
+    }, function () {
+      fail("Could not sign in right now. Try again.");
+    });
   });
 
   form.addEventListener("input", function () { error.hidden = true; });

@@ -8,6 +8,9 @@
 <script>try{var t=localStorage.getItem("pgTheme");if(t){document.documentElement.dataset.theme=t;}}catch(e){}</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%234F46E5'/%3E%3Cg fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 18v-8'/%3E%3Cpath d='M4 14h16v4'/%3E%3Cpath d='M20 14v-1.5a2 2 0 0 0-2-2h-7V14'/%3E%3C/g%3E%3C/svg%3E" />
 <link rel="stylesheet" href="styles.css" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="auth.js"></script>
 </head>
 <body class="auth-body">
 
@@ -26,6 +29,8 @@
     <h1>Create your account</h1>
     <p class="auth-sub">Set up a login for PG Manager</p>
 
+    <p class="auth-ok" id="confirm-note" role="status" hidden></p>
+
     <form id="signup-form" novalidate>
       <div class="field">
         <label for="name">Full name</label>
@@ -33,15 +38,15 @@
       </div>
 
       <div class="field">
-        <label for="userid">User ID</label>
-        <input id="userid" name="userid" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="swayam" required />
-        <p class="hint">3–20 characters. Letters, numbers and underscore only.</p>
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="you@example.com" required />
+        <p class="hint">You will sign in with this email.</p>
       </div>
 
       <div class="field">
         <label for="password">Password</label>
         <input id="password" name="password" type="password" autocomplete="new-password" placeholder="••••••••" required />
-        <p class="hint">At least 4 characters.</p>
+        <p class="hint">At least 6 characters.</p>
       </div>
 
       <div class="field">
@@ -51,14 +56,14 @@
 
       <p class="auth-error" id="error" role="alert" hidden></p>
 
-      <button class="btn-primary" type="submit">Create account</button>
+      <button class="btn-primary" id="submit" type="submit">Create account</button>
     </form>
 
     <p class="auth-alt">Already have a login? <a href="login.html">Sign in</a></p>
 
     <div class="auth-hint">
-      <b>Preview build</b>
-      <span>Accounts are saved in this browser only — there is no server yet.</span>
+      <b>Accounts</b>
+      <span>Stored in Supabase once the project keys are set in <code>config.js</code>.</span>
     </div>
   </div>
 
@@ -66,27 +71,22 @@
 </main>
 
 <script>
-  // Preview-only account creation. Accounts are stored in localStorage under
-  // "pgUsers" as plain text, which is fine for a demo but NOT for real users.
-  // Replace with a server-side signup (hashed passwords) before go-live.
-  var RESERVED = ["admin"];
-  var ID_RE = /^[A-Za-z0-9_]{3,20}$/;
-
+  // Account creation is handled by auth.js: Supabase Auth when config.js is
+  // filled in, otherwise the browser-only demo mode.
   var form = document.getElementById("signup-form");
   var error = document.getElementById("error");
+  var submit = document.getElementById("submit");
+  var note = document.getElementById("confirm-note");
 
-  function readUsers() {
-    try {
-      var raw = JSON.parse(localStorage.getItem("pgUsers") || "[]");
-      return Object.prototype.toString.call(raw) === "[object Array]" ? raw : [];
-    } catch (err) {
-      return [];
-    }
+  function busy(on) {
+    submit.disabled = on;
+    submit.textContent = on ? "Creating…" : "Create account";
   }
 
   function fail(msg, focusId) {
     error.textContent = msg;
     error.hidden = false;
+    busy(false);
     if (focusId) { document.getElementById(focusId).focus(); }
   }
 
@@ -94,30 +94,33 @@
     e.preventDefault();
 
     var name = document.getElementById("name").value.trim();
-    var id = document.getElementById("userid").value.trim().toLowerCase();
+    var email = document.getElementById("email").value.trim();
     var pw = document.getElementById("password").value;
     var cpw = document.getElementById("confirm").value;
 
     if (!name) { return fail("Please enter your name.", "name"); }
-    if (!ID_RE.test(id)) { return fail("User ID must be 3–20 letters, numbers or underscores.", "userid"); }
-    if (RESERVED.indexOf(id) !== -1) { return fail("That user ID is reserved. Pick another.", "userid"); }
-    if (pw.length < 4) { return fail("Password must be at least 4 characters.", "password"); }
+    if (!PGAuth.isEmail(email)) { return fail("Enter a valid email address.", "email"); }
+    if (pw.length < 6) { return fail("Password must be at least 6 characters.", "password"); }
     if (pw !== cpw) { return fail("Passwords do not match.", "confirm"); }
 
-    var users = readUsers();
-    for (var i = 0; i < users.length; i++) {
-      if (users[i].id === id) { return fail("That user ID is already taken.", "userid"); }
-    }
+    busy(true);
 
-    users.push({ id: id, pw: pw, name: name, created: new Date().toISOString() });
-
-    try {
-      localStorage.setItem("pgUsers", JSON.stringify(users));
-    } catch (err) {
-      return fail("Could not save the account in this browser.", null);
-    }
-
-    location.replace("login.html?new=1");
+    PGAuth.signUp(name, email, pw).then(function (res) {
+      if (!res.ok) {
+        return fail(res.error || "Could not create the account.", "email");
+      }
+      if (res.needsConfirm) {
+        // Supabase is set to confirm email addresses before the first sign-in.
+        error.hidden = true;
+        form.hidden = true;
+        note.textContent = "Almost done — check " + email + " for a confirmation link, then sign in.";
+        note.hidden = false;
+        return;
+      }
+      location.replace("login.html?new=1");
+    }, function () {
+      fail("Could not create the account right now. Try again.", null);
+    });
   });
 
   form.addEventListener("input", function () { error.hidden = true; });
