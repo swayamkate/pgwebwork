@@ -240,7 +240,12 @@ if (themeBtn) {
 const logoutBtn = el("logout");
 if (logoutBtn) {
   logoutBtn.addEventListener("click", () => {
-    try { sessionStorage.removeItem("pgAuth"); } catch (err) {}
-    location.replace("login.html");
+    const done = () => location.replace("login.html");
+    if (window.PGAuth) {
+      Promise.resolve(window.PGAuth.signOut()).then(done, done);
+    } else {
+      try { sessionStorage.removeItem("pgAuth"); } catch (err) {}
+      done();
+    }
   });
 }

@@ -9,7 +9,46 @@
 <script>try{var t=localStorage.getItem("pgTheme");if(t){document.documentElement.dataset.theme=t;}}catch(e){}</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%234F46E5'/%3E%3Cg fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 18v-8'/%3E%3Cpath d='M4 14h16v4'/%3E%3Cpath d='M20 14v-1.5a2 2 0 0 0-2-2h-7V14'/%3E%3C/g%3E%3C/svg%3E" />
 <link rel="stylesheet" href="styles.css" />
-<script>try{if(sessionStorage.getItem("pgAuth")!=="ok"){location.replace("login.html");}}catch(e){}</script>
+<style>html.auth-pending body{visibility:hidden}</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="auth.js"></script>
+<script>
+  // Hide the dashboard until we know whether a session exists, so a signed-out
+  // visitor never sees the data before the redirect happens.
+  document.documentElement.classList.add("auth-pending");
+
+  function pgReveal() {
+    document.documentElement.classList.remove("auth-pending");
+  }
+
+  function pgGreet(name) {
+    var heading = document.querySelector("#view-dashboard h1");
+    if (heading && name) {
+      heading.textContent = "Good evening, " + String(name).split(" ")[0];
+    }
+  }
+
+  // Safety net: never leave the page invisible if anything fails.
+  setTimeout(pgReveal, 4000);
+
+  try {
+    PGAuth.session().then(function (s) {
+      if (!s.signedIn) {
+        location.replace("login.html");
+        return;
+      }
+      pgReveal();
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", function () { pgGreet(s.name); });
+      } else {
+        pgGreet(s.name);
+      }
+    }, pgReveal);
+  } catch (e) {
+    pgReveal();
+  }
+</script>
 </head>
 <body>
 
