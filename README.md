@@ -19,7 +19,9 @@ Signing in sets a flag in `sessionStorage` and sends you to the dashboard. `inde
 
 ## Theme
 
-Light and dark themes ship together. The toggle sits in the header (and top-right of the login page), and the choice is saved to `localStorage`, so it survives reloads.
+**Dark is the default.** Light is available too — the toggle sits in the header (and top-right of the login page), and the choice is saved to `localStorage`, so it survives reloads.
+
+To change the default, edit the `data-theme` attribute on the `<html>` tag in `index.html` and `login.html` (`"dark"` or `"light"`). A returning visitor's saved preference always wins over that default.
 
 The palette is defined once as CSS custom properties at the top of `styles.css`:
 
