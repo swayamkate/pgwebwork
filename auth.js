@@ -44,10 +44,12 @@
     }
   }
 
-  function startDemoSession(name) {
+  // The id is what the data store keys off, so each login gets its own rooms.
+  function startDemoSession(name, id) {
     try {
       sessionStorage.setItem("pgAuth", "ok");
       sessionStorage.setItem("pgUser", name);
+      sessionStorage.setItem("pgUserId", id || name);
     } catch (err) {}
   }
 
@@ -55,16 +57,21 @@
     try {
       sessionStorage.removeItem("pgAuth");
       sessionStorage.removeItem("pgUser");
+      sessionStorage.removeItem("pgUserId");
     } catch (err) {}
   }
 
   function demoSession() {
     try {
       if (sessionStorage.getItem("pgAuth") === "ok") {
-        return { signedIn: true, name: sessionStorage.getItem("pgUser") || "Owner" };
+        return {
+          signedIn: true,
+          name: sessionStorage.getItem("pgUser") || "Owner",
+          id: sessionStorage.getItem("pgUserId") || "local"
+        };
       }
     } catch (err) {}
-    return { signedIn: false, name: null };
+    return { signedIn: false, name: null, id: null };
   }
 
   function nameFromUser(user) {
@@ -128,7 +135,7 @@
 
       // Demo owner login stays available in both modes as a fallback.
       if (id.toLowerCase() === DEMO_ID && password === DEMO_PW) {
-        startDemoSession("Owner");
+        startDemoSession("Owner", DEMO_ID);
         return Promise.resolve({ ok: true, name: "Owner" });
       }
 
@@ -148,7 +155,7 @@
       for (var i = 0; i < users.length; i++) {
         if (users[i].id === id.toLowerCase() && users[i].pw === password) {
           var who = users[i].name || users[i].id;
-          startDemoSession(who);
+          startDemoSession(who, users[i].id);
           return Promise.resolve({ ok: true, name: who });
         }
       }
@@ -162,7 +169,13 @@
           .getSession()
           .then(function (res) {
             var s = res && res.data ? res.data.session : null;
-            if (s) { return { signedIn: true, name: nameFromUser(s.user) }; }
+            if (s) {
+              return {
+                signedIn: true,
+                name: nameFromUser(s.user),
+                id: (s.user && s.user.id) || "supabase"
+              };
+            }
             return demoSession();
           })
           .catch(function () {
