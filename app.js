@@ -212,3 +212,13 @@ renderRooms();
 renderTenants();
 renderRent();
 show(location.hash.slice(1) || "dashboard");
+
+/* ---------- session ---------- */
+
+const logoutBtn = el("logout");
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", () => {
+    try { sessionStorage.removeItem("pgAuth"); } catch (err) {}
+    location.replace("login.html");
+  });
+}
