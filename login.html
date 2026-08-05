@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sign in — PG Manager</title>
+<meta name="theme-color" content="#2783DE" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%232783DE'/%3E%3Cg fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 18v-8'/%3E%3Cpath d='M4 14h16v4'/%3E%3Cpath d='M20 14v-1.5a2 2 0 0 0-2-2h-7V14'/%3E%3C/g%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body class="auth-body">
+
+<main class="auth">
+  <div class="auth-card">
+    <span class="brand-mark auth-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18v-8"/><path d="M4 14h16v4"/><path d="M20 14v-1.5a2 2 0 0 0-2-2h-7V14"/></svg>
+    </span>
+
+    <h1>Sign in to PG Manager</h1>
+    <p class="auth-sub">Owner access for Sunrise Boys PG</p>
+
+    <form id="login-form" novalidate>
+      <div class="field">
+        <label for="userid">User ID</label>
+        <input id="userid" name="userid" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="admin" required />
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••" required />
+      </div>
+
+      <p class="auth-error" id="error" role="alert" hidden>Wrong user ID or password. Try again.</p>
+
+      <button class="btn-primary" type="submit">Sign in</button>
+    </form>
+
+    <div class="auth-hint">
+      <b>Demo access</b>
+      <span>User ID <code>admin</code> · Password <code>pass</code></span>
+    </div>
+  </div>
+
+  <p class="auth-foot">PG Manager · static preview build v0.1</p>
+</main>
+
+<script>
+  // Preview-only gate. Credentials are checked in the browser, so this is a
+  // demo lock, not real security. Replace with a server login before go-live.
+  var DEMO_ID = "admin";
+  var DEMO_PW = "pass";
+
+  var form = document.getElementById("login-form");
+  var error = document.getElementById("error");
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var id = document.getElementById("userid").value.trim();
+    var pw = document.getElementById("password").value;
+
+    if (id === DEMO_ID && pw === DEMO_PW) {
+      try { sessionStorage.setItem("pgAuth", "ok"); } catch (err) {}
+      location.replace("index.html");
+    } else {
+      error.hidden = false;
+      document.getElementById("password").value = "";
+      document.getElementById("password").focus();
+    }
+  });
+
+  form.addEventListener("input", function () { error.hidden = true; });
+</script>
+</body>
+</html>
