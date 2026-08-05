@@ -26,6 +26,8 @@
     <h1>Sign in to PG Manager</h1>
     <p class="auth-sub">Owner access for Sunrise Boys PG</p>
 
+    <p class="auth-ok" id="created" role="status" hidden>Account created. Sign in below.</p>
+
     <form id="login-form" novalidate>
       <div class="field">
         <label for="userid">User ID</label>
@@ -42,6 +44,8 @@
       <button class="btn-primary" type="submit">Sign in</button>
     </form>
 
+    <p class="auth-alt">No account yet? <a href="signup.html">Create one</a></p>
+
     <div class="auth-hint">
       <b>Demo access</b>
       <span>User ID <code>admin</code> · Password <code>pass</code></span>
@@ -57,6 +61,28 @@
   var DEMO_ID = "admin";
   var DEMO_PW = "pass";
 
+  // Accounts created on signup.html are stored in localStorage under "pgUsers".
+  function readUsers() {
+    try {
+      var raw = JSON.parse(localStorage.getItem("pgUsers") || "[]");
+      return Object.prototype.toString.call(raw) === "[object Array]" ? raw : [];
+    } catch (err) {
+      return [];
+    }
+  }
+
+  // Returns the display name on success, or null when nothing matches.
+  function authenticate(id, pw) {
+    if (id === DEMO_ID && pw === DEMO_PW) { return "Owner"; }
+    var users = readUsers();
+    for (var i = 0; i < users.length; i++) {
+      if (users[i].id === id.toLowerCase() && users[i].pw === pw) {
+        return users[i].name || users[i].id;
+      }
+    }
+    return null;
+  }
+
   var form = document.getElementById("login-form");
   var error = document.getElementById("error");
 
@@ -65,8 +91,13 @@
     var id = document.getElementById("userid").value.trim();
     var pw = document.getElementById("password").value;
 
-    if (id === DEMO_ID && pw === DEMO_PW) {
-      try { sessionStorage.setItem("pgAuth", "ok"); } catch (err) {}
+    var who = authenticate(id, pw);
+
+    if (who) {
+      try {
+        sessionStorage.setItem("pgAuth", "ok");
+        sessionStorage.setItem("pgUser", who);
+      } catch (err) {}
       location.replace("index.html");
     } else {
       error.hidden = false;
@@ -76,6 +107,11 @@
   });
 
   form.addEventListener("input", function () { error.hidden = true; });
+
+  // Confirmation banner after arriving from signup.html
+  if (/[?&]new=1/.test(location.search)) {
+    document.getElementById("created").hidden = false;
+  }
 
   document.getElementById("theme-toggle").addEventListener("click", function () {
     var next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";

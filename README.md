@@ -6,22 +6,24 @@ This is a **display build**. Everything renders from demo data in `app.js`, so i
 
 ## Login
 
-The site opens on `login.html`.
+The site opens on `login.html`. There are two ways in:
 
-| Field | Value |
+| Route | Details |
 | --- | --- |
-| User ID | `admin` |
-| Password | `pass` |
+| Demo owner login | User ID `admin` · password `pass` |
+| Create your own | `signup.html`, linked from the login page |
 
-Signing in sets a flag in `sessionStorage` and sends you to the dashboard. `index.html` redirects back to the login page if that flag is missing, and **Log out** in the header clears it. Closing the browser tab ends the session.
+Signing in sets a flag in `sessionStorage` (plus the display name under `pgUser`) and sends you to the dashboard. `index.html` redirects back to the login page if that flag is missing, and **Log out** in the header clears it. Closing the browser tab ends the session.
 
-> **This is a demo lock, not real security.** The credentials sit in `login.html` and are checked in the browser, so anyone can read them via View Source. Replace this with a server-side login before real tenant data goes in.
+Accounts created through the sign-up page are stored in `localStorage` under `pgUsers` as `{ id, pw, name, created }`. User IDs are lowercased, must be 3–20 characters of letters, numbers or underscores, and `admin` is reserved.
+
+> **This is a demo lock, not real security.** Passwords are stored and compared in plain text in the browser, so anyone can read them via View Source or DevTools. Accounts also live only in the browser that created them — they do not sync across devices. Replace this with a server-side signup and login (hashed passwords) before real tenant data goes in.
 
 ## Theme
 
-**Dark is the default.** Light is available too — the toggle sits in the header (and top-right of the login page), and the choice is saved to `localStorage`, so it survives reloads.
+**Dark is the default.** Light is available too — the toggle sits in the header (and top-right of the login and sign-up pages), and the choice is saved to `localStorage`, so it survives reloads.
 
-To change the default, edit the `data-theme` attribute on the `<html>` tag in `index.html` and `login.html` (`"dark"` or `"light"`). A returning visitor's saved preference always wins over that default.
+To change the default, edit the `data-theme` attribute on the `<html>` tag in `index.html`, `login.html` and `signup.html` (`"dark"` or `"light"`). A returning visitor's saved preference always wins over that default.
 
 The palette is defined once as CSS custom properties at the top of `styles.css`:
 
@@ -42,7 +44,8 @@ To rebrand, change `--brand`, `--brand-soft` and `--brand-grad` in both blocks; 
 ## Files
 
 ```
-login.html    sign-in page (demo credentials)
+login.html    sign-in page (demo credentials + saved accounts)
+signup.html   account creation
 index.html    all four dashboard screens
 styles.css    design tokens + all component styles
 app.js        demo data + rendering + navigation + theme/logout
