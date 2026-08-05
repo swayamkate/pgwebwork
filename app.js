@@ -1,76 +1,90 @@
-/* PG Manager — static preview build.
-   All data below is demo data held in memory. Swap this file for real API
-   calls when the backend is ready. */
+/* PG Manager — dashboard.
 
-const ROOMS = [
-  { no: "101", floor: 1, sharing: 3, beds: ["Rohit Sharma", "Aman Verma", "Kunal Joshi"] },
-  { no: "102", floor: 1, sharing: 3, beds: ["Vivek Nair", "Sahil Khan", null] },
-  { no: "103", floor: 1, sharing: 2, beds: ["Arjun Rao", "Nikhil Patil"] },
-  { no: "104", floor: 1, sharing: 4, beds: ["Dev Mehta", "Yash Kulkarni", "Omkar Deshmukh", "notice:Harsh Gupta"] },
-  { no: "201", floor: 2, sharing: 3, beds: ["Pranav Iyer", "Sameer Shaikh", "Aditya Jain"] },
-  { no: "202", floor: 2, sharing: 3, beds: ["Rahul Bose", null, "Karan Malhotra"] },
-  { no: "203", floor: 2, sharing: 4, beds: ["Tejas Pawar", "Ishan Roy", "Manav Shah", "Zaid Ansari"] },
-  { no: "204", floor: 2, sharing: 2, beds: ["notice:Gaurav Singh", "Akash Reddy"] },
-  { no: "301", floor: 3, sharing: 3, beds: ["Siddharth Menon", "Ravi Chauhan", "Parth Trivedi"] },
-  { no: "302", floor: 3, sharing: 3, beds: ["Naveen Kumar", null, null] },
-  { no: "303", floor: 3, sharing: 2, beds: ["Abhay Sinha", "Rehan Qureshi"] },
-  { no: "304", floor: 3, sharing: 4, beds: ["Varun Bhatt", "Imran Sheikh", "notice:Sanjay More", null] },
-];
+   No sample data lives in this file. Everything on screen comes from PGStore,
+   which starts empty for every account and is filled in through the UI.
+*/
 
-const JOIN_DATES = ["12 Jan 2026", "03 Feb 2026", "21 Feb 2026", "08 Mar 2026", "17 Apr 2026", "02 May 2026", "29 May 2026", "14 Jun 2026", "05 Jul 2026"];
-const RENT_BY_SHARING = { 2: 9500, 3: 8000, 4: 6500 };
-const BED_LETTERS = ["A", "B", "C", "D"];
+/* ---------- helpers ---------- */
 
-const ACTIVITY = [
-  { type: "pay", icon: "₹", text: "Rent received from Arjun Rao", meta: "₹9,500 · UPI · today, 4:12 PM" },
-  { type: "in", icon: "→", text: "Naveen Kumar checked in", meta: "Room 301 · Bed A · yesterday" },
-  { type: "out", icon: "←", text: "Harsh Gupta gave 30-day notice", meta: "Room 104 · Bed D · 2 days ago" },
-  { type: "pay", icon: "₹", text: "Rent received from Tejas Pawar", meta: "₹6,500 · Cash · 3 days ago" },
-  { type: "in", icon: "→", text: "Rehan Qureshi checked in", meta: "Room 303 · Bed B · 4 days ago" },
-];
+const el = (id) => document.getElementById(id);
+const money = (n) => "\u20b9" + Number(n || 0).toLocaleString("en-IN");
+const BADGE = { paid: "Paid", due: "Due", late: "Overdue" };
 
-/* ---------- derive ---------- */
+const initials = (name) =>
+  String(name || "?").trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase() || "?";
 
-function buildTenants() {
+/* Tenant names and phone numbers are typed by the user, so everything that
+   reaches innerHTML goes through this first. */
+const esc = (s) =>
+  String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function prettyDate(value) {
+  if (!value) { return "\u2014"; }
+  const d = new Date(value);
+  if (isNaN(d.getTime())) { return esc(value); }
+  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function sinceLabel(iso) {
+  const then = new Date(iso).getTime();
+  if (isNaN(then)) { return ""; }
+  const mins = Math.round((Date.now() - then) / 60000);
+  if (mins < 1) { return "just now"; }
+  if (mins < 60) { return mins + " min ago"; }
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) { return hrs + (hrs === 1 ? " hour ago" : " hours ago"); }
+  const days = Math.round(hrs / 24);
+  return days === 1 ? "yesterday" : days + " days ago";
+}
+
+/* Unpaid becomes "Overdue" once we are past the 10th of the month. */
+function bedStatus(bed) {
+  if (bed.paid) { return "paid"; }
+  return new Date().getDate() > 10 ? "late" : "due";
+}
+
+function tenants() {
   const out = [];
-  ROOMS.forEach((room) => {
-    room.beds.forEach((raw, i) => {
-      if (!raw) return;
-      const onNotice = raw.startsWith("notice:");
-      const name = onNotice ? raw.slice(7) : raw;
-      const n = out.length;
-      const status = onNotice ? "late" : n % 7 === 3 ? "late" : n % 3 === 0 ? "due" : "paid";
+  PGStore.state().rooms.forEach((room) => {
+    room.beds.forEach((bed, i) => {
+      if (!bed) { return; }
       out.push({
-        name,
-        room: room.no,
-        bed: BED_LETTERS[i],
-        sharing: room.sharing,
-        onNotice,
-        rent: RENT_BY_SHARING[room.sharing],
-        phone: "+91 9" + String(800000000 + n * 3717219).slice(0, 9),
-        joined: JOIN_DATES[n % JOIN_DATES.length],
-        status,
+        name: bed.name,
+        phone: bed.phone,
+        joined: bed.joined,
+        onNotice: bed.onNotice,
+        paid: bed.paid,
+        status: bedStatus(bed),
+        roomId: room.id,
+        roomNo: room.no,
+        bedIndex: i,
+        bed: PGStore.bedLabel(i),
+        rent: room.rent
       });
     });
   });
   return out;
 }
 
-const TENANTS = buildTenants();
-const BEDS_TOTAL = ROOMS.reduce((s, r) => s + r.beds.length, 0);
-const OCCUPIED = TENANTS.length;
-const VACANT = BEDS_TOTAL - OCCUPIED;
-const ON_NOTICE = TENANTS.filter((t) => t.onNotice).length;
-const EXPECTED = TENANTS.reduce((s, t) => s + t.rent, 0);
-const COLLECTED = TENANTS.filter((t) => t.status === "paid").reduce((s, t) => s + t.rent, 0);
-const PENDING = EXPECTED - COLLECTED;
-
-/* ---------- helpers ---------- */
-
-const money = (n) => "\u20b9" + n.toLocaleString("en-IN");
-const initials = (name) => name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
-const el = (id) => document.getElementById(id);
-const BADGE = { paid: "Paid", due: "Due", late: "Overdue" };
+function totals() {
+  const rooms = PGStore.state().rooms;
+  const list = tenants();
+  const beds = rooms.reduce((s, r) => s + r.beds.length, 0);
+  const expected = list.reduce((s, t) => s + t.rent, 0);
+  const collected = list.filter((t) => t.paid).reduce((s, t) => s + t.rent, 0);
+  return {
+    rooms: rooms.length,
+    beds,
+    occupied: list.length,
+    vacant: beds - list.length,
+    onNotice: list.filter((t) => t.onNotice).length,
+    expected,
+    collected,
+    pending: expected - collected,
+    rate: beds ? Math.round((list.length / beds) * 100) : 0
+  };
+}
 
 const ICONS = {
   bed: '<path d="M4 18v-8"/><path d="M4 14h16v4"/><path d="M20 14v-1.5a2 2 0 0 0-2-2h-7V14"/>',
@@ -78,7 +92,7 @@ const ICONS = {
   door: '<path d="M6 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/><path d="M4 21h16"/><circle cx="14" cy="12" r=".6"/>',
   wallet: '<path d="M3 7a2 2 0 0 1 2-2h11v3"/><rect x="3" y="7" width="18" height="12" rx="2.5"/><circle cx="16.5" cy="13" r="1"/>',
   rupee: '<circle cx="12" cy="12" r="9"/><path d="M9.5 8h5"/><path d="M9.5 10.5h5"/><path d="M13 10.5a2.5 2.5 0 0 1-2.5 2.5H9.5l4 4"/>',
-  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/>',
+  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/>'
 };
 
 function statCard(s) {
@@ -95,55 +109,110 @@ function statCard(s) {
     </div>`;
 }
 
+function emptyState(title, note, action) {
+  return `
+    <div class="empty">
+      <span class="empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ICONS.bed}</svg>
+      </span>
+      <b>${title}</b>
+      <p>${note}</p>
+      ${action || ""}
+    </div>`;
+}
+
 /* ---------- render ---------- */
 
 function renderStats() {
-  const rate = Math.round((OCCUPIED / BEDS_TOTAL) * 100);
+  const t = totals();
   el("stats").innerHTML = [
-    { label: "Total beds", value: BEDS_TOTAL, note: ROOMS.length + " rooms · 3 floors", icon: "bed", tone: "brand" },
-    { label: "Occupied", value: OCCUPIED, note: rate + "% occupancy", cls: "up", icon: "users", tone: "green" },
-    { label: "Vacant", value: VACANT, note: ON_NOTICE + " more on notice", cls: "warn", icon: "door", tone: "amber" },
-    { label: "Collected in Aug", value: money(COLLECTED), note: money(PENDING) + " pending", cls: "warn", icon: "wallet", tone: "brand" },
+    { label: "Total beds", value: t.beds, note: t.rooms === 1 ? "1 room" : t.rooms + " rooms", icon: "bed", tone: "brand" },
+    { label: "Occupied", value: t.occupied, note: t.beds ? t.rate + "% occupancy" : "No beds yet", cls: "up", icon: "users", tone: "green" },
+    { label: "Vacant", value: t.vacant, note: t.onNotice + " on notice", cls: "warn", icon: "door", tone: "amber" },
+    { label: "Collected", value: money(t.collected), note: money(t.pending) + " pending", cls: "warn", icon: "wallet", tone: "brand" }
   ].map(statCard).join("");
 }
 
 function renderFloors() {
-  const floors = [1, 2, 3].map((f) => {
-    const rooms = ROOMS.filter((r) => r.floor === f);
-    const total = rooms.reduce((s, r) => s + r.beds.length, 0);
-    const filled = rooms.reduce((s, r) => s + r.beds.filter(Boolean).length, 0);
-    return { f, total, filled, pct: Math.round((filled / total) * 100) };
-  });
-  el("occ-total").textContent = OCCUPIED + " of " + BEDS_TOTAL + " beds filled";
-  el("floor-bars").innerHTML = floors.map((x) => `
+  const rooms = PGStore.state().rooms;
+  const t = totals();
+  el("occ-total").textContent = t.beds ? t.occupied + " of " + t.beds + " beds filled" : "";
+
+  if (!rooms.length) {
+    el("floor-bars").innerHTML = '<p class="muted-sm">Add a room to see occupancy here.</p>';
+    return;
+  }
+
+  const floors = [];
+  rooms.forEach((r) => { if (floors.indexOf(r.floor) === -1) { floors.push(r.floor); } });
+  floors.sort((a, b) => a - b);
+
+  el("floor-bars").innerHTML = floors.map((f) => {
+    const on = rooms.filter((r) => r.floor === f);
+    const total = on.reduce((s, r) => s + r.beds.length, 0);
+    const filled = on.reduce((s, r) => s + r.beds.filter(Boolean).length, 0);
+    const pct = total ? Math.round((filled / total) * 100) : 0;
+    return `
     <div>
-      <div class="bar-row-top"><span>Floor ${x.f}</span><b>${x.filled}/${x.total} · ${x.pct}%</b></div>
-      <div class="bar-track"><div class="bar-fill" style="width:${x.pct}%"></div></div>
-    </div>`).join("");
+      <div class="bar-row-top"><span>Floor ${f}</span><b>${filled}/${total} · ${pct}%</b></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join("");
 }
 
 function renderFeed() {
-  el("feed").innerHTML = ACTIVITY.map((a) => `
+  const items = PGStore.state().activity;
+  const glyph = { pay: "\u20b9", in: "\u2192", out: "\u2190" };
+
+  if (!items.length) {
+    el("feed").innerHTML = '<li class="feed-blank">Nothing yet. Adding rooms, tenants and payments will show up here.</li>';
+    return;
+  }
+
+  el("feed").innerHTML = items.map((a) => {
+    const meta = [a.meta, sinceLabel(a.at)].filter(Boolean).join(" · ");
+    return `
     <li>
-      <span class="ico ico-${a.type}" aria-hidden="true">${a.icon}</span>
-      <span class="feed-body">${a.text}<span>${a.meta}</span></span>
-    </li>`).join("");
+      <span class="ico ico-${esc(a.type)}" aria-hidden="true">${glyph[a.type] || "\u2022"}</span>
+      <span class="feed-body">${esc(a.text)}<span>${esc(meta)}</span></span>
+    </li>`;
+  }).join("");
 }
 
 function renderRooms() {
-  el("rooms").innerHTML = ROOMS.map((room) => {
+  const rooms = PGStore.state().rooms;
+
+  if (!rooms.length) {
+    el("rooms").innerHTML = emptyState(
+      "No rooms yet",
+      "Add your first room and the beds inside it. Everything else builds on this.",
+      '<button class="btn-primary btn-sm" data-act="add-room" type="button">Add a room</button>'
+    );
+    return;
+  }
+
+  el("rooms").innerHTML = rooms.map((room) => {
     const filled = room.beds.filter(Boolean).length;
-    const beds = room.beds.map((raw, i) => {
-      const onNotice = raw && raw.startsWith("notice:");
-      const name = raw ? (onNotice ? raw.slice(7) : raw) : "Vacant";
-      const cls = raw ? (onNotice ? "bed bed-notice" : "bed bed-occupied") : "bed";
-      return `<div class="${cls}"><b>Bed ${BED_LETTERS[i]}</b><span>${name}</span></div>`;
+
+    const beds = room.beds.map((bed, i) => {
+      const label = PGStore.bedLabel(i);
+      if (!bed) {
+        return `<button class="bed bed-add" type="button" data-act="fill-bed" data-room="${esc(room.id)}" data-bed="${i}">
+          <b>Bed ${label}</b><span>+ Add tenant</span>
+        </button>`;
+      }
+      const cls = bed.onNotice ? "bed bed-notice" : "bed bed-occupied";
+      return `<div class="${cls}"><b>Bed ${label}</b><span>${esc(bed.name)}</span></div>`;
     }).join("");
+
     return `
       <div class="room">
         <div class="room-head">
-          <b>Room ${room.no}</b>
-          <span class="muted-sm">${filled}/${room.beds.length} · ${money(RENT_BY_SHARING[room.sharing])}</span>
+          <b>Room ${esc(room.no)}</b>
+          <span class="room-head-right">
+            <span class="muted-sm">${filled}/${room.beds.length} · ${money(room.rent)}</span>
+            <button class="x-btn" type="button" data-act="del-room" data-room="${esc(room.id)}" title="Remove room ${esc(room.no)}" aria-label="Remove room ${esc(room.no)}">×</button>
+          </span>
         </div>
         <div class="room-beds">${beds}</div>
       </div>`;
@@ -151,54 +220,232 @@ function renderRooms() {
 }
 
 function renderTenants() {
-  el("tenant-rows").innerHTML = TENANTS.map((t) => `
+  const list = tenants();
+  const table = document.querySelector(".table-card");
+  const blank = el("tenants-empty");
+
+  if (!list.length) {
+    table.hidden = true;
+    el("tenant-cards").innerHTML = "";
+    blank.hidden = false;
+    blank.innerHTML = emptyState(
+      "No tenants yet",
+      PGStore.isEmpty()
+        ? "Add a room first, then move tenants into its beds."
+        : "Move someone into a vacant bed to see them listed here.",
+      PGStore.isEmpty()
+        ? '<button class="btn-primary btn-sm" data-act="add-room" type="button">Add a room</button>'
+        : '<button class="btn-primary btn-sm" data-act="add-tenant" type="button">Add a tenant</button>'
+    );
+    return;
+  }
+
+  table.hidden = false;
+  blank.hidden = true;
+  blank.innerHTML = "";
+
+  const actions = (t) => `
+    <button class="link-btn" type="button" data-act="notice" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">${t.onNotice ? "Cancel notice" : "On notice"}</button>
+    <button class="link-btn link-danger" type="button" data-act="checkout" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">Check out</button>`;
+
+  el("tenant-rows").innerHTML = list.map((t) => `
     <tr>
-      <td><span class="who"><span class="av">${initials(t.name)}</span>${t.name}</span></td>
-      <td class="mono">${t.room} · ${t.bed}</td>
-      <td class="mono">${t.phone}</td>
-      <td>${t.joined}</td>
+      <td><span class="who"><span class="av">${esc(initials(t.name))}</span>${esc(t.name)}${t.onNotice ? ' <span class="tag-notice">notice</span>' : ""}</span></td>
+      <td class="mono">${esc(t.roomNo)} · ${t.bed}</td>
+      <td class="mono">${esc(t.phone) || "\u2014"}</td>
+      <td>${prettyDate(t.joined)}</td>
       <td class="mono">${money(t.rent)}</td>
       <td><span class="badge badge-${t.status}">${BADGE[t.status]}</span></td>
+      <td class="row-actions">${actions(t)}</td>
     </tr>`).join("");
 
-  el("tenant-cards").innerHTML = TENANTS.map((t) => `
+  el("tenant-cards").innerHTML = list.map((t) => `
     <div class="tcard">
       <div class="tcard-top">
-        <span class="who"><span class="av">${initials(t.name)}</span>${t.name}</span>
+        <span class="who"><span class="av">${esc(initials(t.name))}</span>${esc(t.name)}</span>
         <span class="badge badge-${t.status}">${BADGE[t.status]}</span>
       </div>
       <div class="tcard-grid">
-        <div><b>Bed</b>${t.room} · ${t.bed}</div>
+        <div><b>Bed</b>${esc(t.roomNo)} · ${t.bed}</div>
         <div><b>Rent</b>${money(t.rent)}</div>
-        <div><b>Phone</b>${t.phone}</div>
-        <div><b>Joined</b>${t.joined}</div>
+        <div><b>Phone</b>${esc(t.phone) || "\u2014"}</div>
+        <div><b>Joined</b>${prettyDate(t.joined)}</div>
       </div>
+      <div class="row-actions">${actions(t)}</div>
     </div>`).join("");
 }
 
 function renderRent() {
-  const paid = TENANTS.filter((t) => t.status === "paid").length;
+  const list = tenants();
+  const t = totals();
+  const paid = list.filter((x) => x.paid).length;
+
+  el("rent-title").textContent =
+    "Rent \u2014 " + new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+
   el("rent-stats").innerHTML = [
-    { label: "Expected", value: money(EXPECTED), note: TENANTS.length + " tenants", icon: "rupee", tone: "brand" },
-    { label: "Collected", value: money(COLLECTED), note: paid + " payments received", cls: "up", icon: "wallet", tone: "green" },
-    { label: "Pending", value: money(PENDING), note: TENANTS.length - paid + " still to pay", cls: "warn", icon: "clock", tone: "red" },
+    { label: "Expected", value: money(t.expected), note: list.length === 1 ? "1 tenant" : list.length + " tenants", icon: "rupee", tone: "brand" },
+    { label: "Collected", value: money(t.collected), note: paid + (paid === 1 ? " payment received" : " payments received"), cls: "up", icon: "wallet", tone: "green" },
+    { label: "Pending", value: money(t.pending), note: (list.length - paid) + " still to pay", cls: "warn", icon: "clock", tone: "red" }
   ].map(statCard).join("");
 
+  if (!list.length) {
+    el("paylist").innerHTML = '<li class="feed-blank">Rent appears here once tenants move in.</li>';
+    return;
+  }
+
   const order = { late: 0, due: 1, paid: 2 };
-  el("paylist").innerHTML = [...TENANTS]
+  el("paylist").innerHTML = list
+    .slice()
     .sort((a, b) => order[a.status] - order[b.status])
-    .map((t) => `
+    .map((x) => `
       <li>
         <span class="pay-left">
-          <span class="av">${initials(t.name)}</span>
-          <span class="pay-name">${t.name}<span>Room ${t.room} · Bed ${t.bed}</span></span>
+          <span class="av">${esc(initials(x.name))}</span>
+          <span class="pay-name">${esc(x.name)}<span>Room ${esc(x.roomNo)} · Bed ${x.bed}</span></span>
         </span>
         <span class="pay-right">
-          <span class="amount">${money(t.rent)}</span>
-          <span class="badge badge-${t.status}">${BADGE[t.status]}</span>
+          <span class="amount">${money(x.rent)}</span>
+          <span class="badge badge-${x.status}">${BADGE[x.status]}</span>
+          <button class="link-btn" type="button" data-act="pay" data-room="${esc(x.roomId)}" data-bed="${x.bedIndex}" data-paid="${x.paid ? "0" : "1"}">${x.paid ? "Undo" : "Mark paid"}</button>
         </span>
       </li>`).join("");
 }
+
+function renderAll() {
+  const s = PGStore.state();
+  el("brand-prop").textContent = s.property || "Name your property";
+  el("setup").hidden = !PGStore.isEmpty();
+  renderStats();
+  renderFloors();
+  renderFeed();
+  renderRooms();
+  renderTenants();
+  renderRent();
+}
+
+/* ---------- dialogs ---------- */
+
+function openDlg(id) {
+  const d = el(id);
+  const err = d.querySelector(".auth-error");
+  if (err) { err.hidden = true; }
+  if (d.showModal) { d.showModal(); } else { d.setAttribute("open", ""); }
+  const first = d.querySelector("input, select");
+  if (first) { setTimeout(() => first.focus(), 30); }
+}
+
+function closeDlg(id) {
+  const d = el(id);
+  if (d.close) { d.close(); } else { d.removeAttribute("open"); }
+}
+
+function showErr(id, message) {
+  const p = el(id);
+  p.textContent = message;
+  p.hidden = false;
+}
+
+/* Fill the bed picker with every vacant bed, optionally preselecting one. */
+function fillBedPicker(roomId, bedIndex) {
+  const picker = el("t-bed");
+  const free = PGStore.vacantBeds();
+
+  picker.innerHTML = free.map((b) =>
+    `<option value="${esc(b.roomId)}|${b.bedIndex}">Room ${esc(b.roomNo)} · Bed ${b.bed} — ${money(b.rent)}</option>`
+  ).join("");
+
+  if (roomId != null) { picker.value = roomId + "|" + bedIndex; }
+  return free.length;
+}
+
+function openTenantDialog(roomId, bedIndex) {
+  if (!PGStore.vacantBeds().length) {
+    alert(PGStore.isEmpty()
+      ? "Add a room first, then you can move tenants in."
+      : "Every bed is taken. Add another room to make space.");
+    return;
+  }
+  fillBedPicker(roomId, bedIndex);
+  el("t-joined").value = new Date().toISOString().slice(0, 10);
+  openDlg("dlg-tenant");
+}
+
+/* ---------- actions ---------- */
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-act]");
+  if (!btn) { return; }
+
+  const act = btn.dataset.act;
+  const roomId = btn.dataset.room;
+  const bedIndex = btn.dataset.bed;
+
+  if (act === "add-room") {
+    el("form-room").reset();
+    openDlg("dlg-room");
+  } else if (act === "add-tenant") {
+    el("form-tenant").reset();
+    openTenantDialog(null, null);
+  } else if (act === "fill-bed") {
+    el("form-tenant").reset();
+    openTenantDialog(roomId, bedIndex);
+  } else if (act === "name-property") {
+    el("p-name").value = PGStore.state().property;
+    openDlg("dlg-property");
+  } else if (act === "del-room") {
+    if (confirm("Remove this room? Any tenants in it are removed too.")) {
+      PGStore.removeRoom(roomId);
+      renderAll();
+    }
+  } else if (act === "notice") {
+    PGStore.toggleNotice(roomId, Number(bedIndex));
+    renderAll();
+  } else if (act === "checkout") {
+    if (confirm("Check this tenant out and free the bed?")) {
+      PGStore.removeTenant(roomId, Number(bedIndex));
+      renderAll();
+    }
+  } else if (act === "pay") {
+    PGStore.setPaid(roomId, Number(bedIndex), btn.dataset.paid === "1");
+    renderAll();
+  } else if (act === "close") {
+    closeDlg(btn.dataset.dlg);
+  }
+});
+
+el("form-room").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const res = PGStore.addRoom({
+    no: el("r-no").value,
+    floor: el("r-floor").value,
+    beds: el("r-beds").value,
+    rent: el("r-rent").value
+  });
+  if (!res.ok) { showErr("r-err", res.error); return; }
+  closeDlg("dlg-room");
+  renderAll();
+});
+
+el("form-tenant").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const picked = String(el("t-bed").value || "").split("|");
+  const res = PGStore.addTenant(picked[0], picked[1], {
+    name: el("t-name").value,
+    phone: el("t-phone").value,
+    joined: el("t-joined").value
+  });
+  if (!res.ok) { showErr("t-err", res.error); return; }
+  closeDlg("dlg-tenant");
+  renderAll();
+});
+
+el("form-property").addEventListener("submit", (e) => {
+  e.preventDefault();
+  PGStore.setProperty(el("p-name").value);
+  closeDlg("dlg-property");
+  renderAll();
+});
 
 /* ---------- navigation ---------- */
 
@@ -215,16 +462,38 @@ el("tabs").addEventListener("click", (e) => {
 
 window.addEventListener("hashchange", () => show(location.hash.slice(1) || "dashboard"));
 
-/* ---------- init ---------- */
+/* ---------- boot ---------- */
 
-el("stamp").textContent = new Date().toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
-renderStats();
-renderFloors();
-renderFeed();
-renderRooms();
-renderTenants();
-renderRent();
-show(location.hash.slice(1) || "dashboard");
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) { return "Good morning"; }
+  if (h < 17) { return "Good afternoon"; }
+  return "Good evening";
+}
+
+function boot(session) {
+  const name = (session && session.name) || "Owner";
+  PGStore.use((session && session.id) || "local");
+
+  el("greet").textContent = greeting() + ", " + String(name).split(" ")[0];
+  el("avatar").textContent = initials(name);
+  el("avatar").title = name;
+  el("stamp").textContent = new Date().toLocaleDateString("en-IN", {
+    weekday: "short", day: "numeric", month: "short", year: "numeric"
+  });
+
+  renderAll();
+  show(location.hash.slice(1) || "dashboard");
+}
+
+try {
+  PGAuth.session().then((s) => {
+    // A signed-out visitor is redirected by the gate in index.html.
+    if (s.signedIn) { boot(s); }
+  }, () => boot(null));
+} catch (err) {
+  boot(null);
+}
 
 /* ---------- session + theme ---------- */
 
