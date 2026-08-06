@@ -12,6 +12,9 @@
 <link rel="stylesheet" href="manage.css" />
 <style>html.auth-pending body{visibility:hidden}</style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!-- Reads .xlsx in the browser. Deferred because it is only needed once the
+     owner actually opens the import panel; CSV and pasted cells never need it. -->
+<script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="config.js"></script>
 <script src="auth.js"></script>
 <script src="store.js"></script>
@@ -97,6 +100,7 @@
       </div>
       <div class="setup-actions">
         <button class="btn-ghost" data-act="name-property" type="button">Name property</button>
+        <button class="btn-ghost" data-act="import-data" type="button">Import a spreadsheet</button>
         <button class="btn-primary btn-sm" data-act="add-room" type="button">Add first room</button>
       </div>
     </div>
@@ -119,6 +123,15 @@
         <ul class="feed" id="feed"></ul>
       </div>
     </div>
+
+    <div class="backup is-off" id="backup">
+      <span class="backup-dot" aria-hidden="true"></span>
+      <span class="backup-text" id="backup-text">Sheet backup is not set up yet.</span>
+      <span class="backup-actions" id="backup-actions" hidden>
+        <button class="link-btn" type="button" data-act="backup-now">Back up now</button>
+        <button class="link-btn" type="button" data-act="backup-restore">Restore from sheet</button>
+      </span>
+    </div>
   </section>
 
   <!-- BEDS -->
@@ -128,7 +141,10 @@
         <h1>Bed inventory</h1>
         <p class="sub">Every room and bed you have added.</p>
       </div>
-      <button class="btn-primary btn-sm" data-act="add-room" type="button">Add room</button>
+      <div class="head-actions">
+        <button class="btn-ghost btn-sm" data-act="import-data" type="button">Import</button>
+        <button class="btn-primary btn-sm" data-act="add-room" type="button">Add room</button>
+      </div>
     </div>
     <div class="legend">
       <span><i class="key key-occupied"></i>Occupied</span>
@@ -183,7 +199,10 @@
         <h1 id="exp-title">Expenses</h1>
         <p class="sub">What the property costs you to run each month.</p>
       </div>
-      <button class="btn-primary btn-sm" data-act="add-expense" type="button">Add expense</button>
+      <div class="head-actions">
+        <button class="btn-ghost btn-sm" data-act="import-data" type="button">Import</button>
+        <button class="btn-primary btn-sm" data-act="add-expense" type="button">Add expense</button>
+      </div>
     </div>
     <div class="stats stats-3" id="exp-stats"></div>
     <div class="card">
@@ -196,21 +215,6 @@
   </section>
 
 </main>
-
-<!-- Docked to the bottom of the window so the backup state is visible from
-     every tab, not just the overview. -->
-<div class="backup-dock">
-  <div class="wrap">
-    <div class="backup is-off" id="backup">
-      <span class="backup-dot" aria-hidden="true"></span>
-      <span class="backup-text" id="backup-text">Sheet backup is not set up yet.</span>
-      <span class="backup-actions" id="backup-actions" hidden>
-        <button class="link-btn" type="button" data-act="backup-now">Back up now</button>
-        <button class="link-btn" type="button" data-act="backup-restore">Restore from sheet</button>
-      </span>
-    </div>
-  </div>
-</div>
 
 <footer class="foot">
   <div class="wrap foot-in">
@@ -287,6 +291,49 @@
   </form>
 </dialog>
 
+<!-- IMPORT FROM A SPREADSHEET -->
+<dialog class="dlg dlg-wide" id="dlg-import">
+  <div class="dlg-card">
+    <h3>Import from Excel or Google Sheets</h3>
+
+    <div id="imp-step-pick">
+      <p class="imp-lead">Bring in a property you already keep in a spreadsheet. Nothing on this account changes until you have seen what was read.</p>
+
+      <label class="imp-drop" for="imp-file">
+        <b>Choose a file, or drop one here</b>
+        <span>Excel .xlsx and .xls, or .csv</span>
+        <input type="file" id="imp-file" accept=".csv,.tsv,.txt,.xlsx,.xls" />
+      </label>
+
+      <p class="imp-or"><span>or paste straight from Google Sheets</span></p>
+
+      <textarea class="imp-paste" id="imp-paste" rows="4"
+        placeholder="Select the cells in Google Sheets, copy them, and paste here. Include the row with your column names."></textarea>
+
+      <p class="auth-error" id="imp-err" hidden></p>
+
+      <div class="dlg-foot">
+        <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-import">Cancel</button>
+        <button class="btn-primary btn-sm" type="button" data-act="imp-read">Read the sheet</button>
+      </div>
+    </div>
+
+    <div id="imp-step-check" hidden>
+      <div id="imp-summary"></div>
+      <div id="imp-mapping"></div>
+      <div id="imp-preview"></div>
+      <div id="imp-warnings"></div>
+      <div id="imp-mode"></div>
+
+      <div class="dlg-foot">
+        <button class="btn-ghost" type="button" data-act="imp-back">Back</button>
+        <button class="btn-primary btn-sm" type="button" id="imp-apply" data-act="imp-apply">Import</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
 <script src="app.js"></script>
+<script src="import.js"></script>
 </body>
 </html>

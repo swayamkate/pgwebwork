@@ -85,23 +85,12 @@ button.bed-add:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .dlg .field select:focus{outline:none;background:var(--surface);border-color:var(--brand);box-shadow:0 0 0 4px var(--ring)}
 .dlg-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:6px}
 
-/* backup bar, docked to the bottom of the window so it is visible on every
-   tab. The dock is click-through so the fixed layer never swallows presses
-   meant for the page behind it; the bar itself takes them back. */
-.backup-dock{
-  position:fixed;left:0;right:0;bottom:0;z-index:28;
-  padding-bottom:16px;pointer-events:none;
-}
-.backup-dock .wrap{pointer-events:none}
+/* backup bar */
 .backup{
-  pointer-events:auto;
   display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  padding:15px 18px;border:1px solid var(--border);border-radius:14px;
-  background:color-mix(in srgb, var(--surface) 88%, transparent);
-  backdrop-filter:saturate(180%) blur(12px);
-  -webkit-backdrop-filter:saturate(180%) blur(12px);
-  font-size:13px;color:var(--muted);
-  box-shadow:var(--shadow-lg), var(--hairline);
+  margin-top:24px;padding:15px 18px;border:1px solid var(--border);border-radius:14px;
+  background:var(--surface);font-size:13px;color:var(--muted);
+  box-shadow:var(--shadow-sm), var(--hairline);
   transition:border-color .18s ease, color .18s ease;
 }
 .backup-dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
@@ -115,16 +104,93 @@ button.bed-add:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .backup-actions{margin-left:auto;display:flex;gap:14px}
 .backup-actions[hidden]{display:none}
 
-/* The dock floats above the page, so the footer needs room to clear it. */
-.foot{padding-bottom:104px}
+/* ---------- spreadsheet import ---------- */
+
+.dlg-wide{max-width:min(94vw,760px)}
+/* The review step can run long on a big sheet, so the panel scrolls rather
+   than growing past the window. */
+.dlg-wide .dlg-card{max-height:88vh;overflow:auto}
+.head-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+.imp-lead{margin:0 0 16px;color:var(--muted);font-size:13.5px;line-height:1.6}
+
+.imp-drop{
+  display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;
+  border:1.5px dashed var(--border-strong);border-radius:16px;padding:30px 20px;
+  background:var(--surface-2);cursor:pointer;
+  transition:border-color .16s ease, background .16s ease;
+}
+.imp-drop:hover,.imp-drop.is-over{border-color:var(--brand);background:var(--brand-soft)}
+.imp-drop:focus-within{border-color:var(--brand);box-shadow:0 0 0 4px var(--ring)}
+.imp-drop b{font-size:14.5px;font-weight:640;color:var(--text)}
+.imp-drop span{font-size:12.5px;color:var(--muted)}
+/* Hidden from view but still focusable, so the panel stays keyboard reachable. */
+.imp-drop input{position:absolute;width:1px;height:1px;opacity:0}
+
+.imp-or{display:flex;align-items:center;gap:12px;margin:18px 0 12px;color:var(--faint);font-size:12px}
+.imp-or::before,.imp-or::after{content:"";flex:1;height:1px;background:var(--border)}
+
+.imp-paste{
+  width:100%;font:inherit;font-size:13px;line-height:1.5;color:var(--text);
+  background:var(--surface-2);border:1px solid var(--border);border-radius:12px;
+  padding:12px 14px;resize:vertical;min-height:88px;
+  transition:border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.imp-paste:focus{outline:none;border-color:var(--brand);background:var(--surface);box-shadow:0 0 0 4px var(--ring)}
+
+.imp-chips{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.imp-chip{
+  flex:1 1 96px;border:1px solid var(--border);border-radius:12px;
+  background:var(--surface-2);padding:10px 12px;
+}
+.imp-chip b{display:block;font-size:17px;font-weight:660;letter-spacing:-.02em;color:var(--text)}
+.imp-chip span{font-size:11.5px;color:var(--muted)}
+
+.imp-map{margin-bottom:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2)}
+.imp-map summary{padding:11px 14px;font-size:12.5px;font-weight:600;color:var(--brand);cursor:pointer;border-radius:12px}
+.imp-map summary:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.imp-map-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;padding:2px 14px 16px}
+.imp-map-row{display:flex;align-items:center;gap:10px;font-size:12.5px}
+.imp-map-row span{flex:0 0 76px;color:var(--muted)}
+.imp-map-row select{
+  flex:1;min-width:0;font:inherit;font-size:12.5px;color:var(--text);
+  background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:7px 9px;
+}
+.imp-map-row select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--ring)}
+
+.imp-preview{border:1px solid var(--border);border-radius:12px;overflow:auto;max-height:250px;margin-bottom:6px}
+.imp-table{width:100%;border-collapse:collapse;font-size:12.5px;white-space:nowrap}
+.imp-table th{
+  position:sticky;top:0;background:var(--surface-2);text-align:left;
+  padding:9px 12px;font-size:11px;font-weight:640;text-transform:uppercase;
+  letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border);
+}
+.imp-table td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text)}
+.imp-table tbody tr:last-child td{border-bottom:0}
+.imp-dim{color:var(--faint);font-style:normal}
+.imp-more{margin:0 0 16px;font-size:12px;color:var(--faint)}
+.imp-none{margin:0 0 16px;font-size:13px;color:var(--muted)}
+
+.imp-clean{margin:16px 0;font-size:12.5px;color:var(--green)}
+.imp-warn{margin:16px 0;border:1px solid var(--amber);border-radius:12px;background:var(--amber-soft);padding:12px 14px}
+.imp-warn b{display:block;font-size:12.5px;font-weight:640;color:var(--amber);margin-bottom:6px}
+.imp-warn ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px}
+.imp-warn li{font-size:12.5px;line-height:1.5;color:var(--text)}
+
+.imp-note{margin:0 0 4px;font-size:12.5px;color:var(--muted)}
+.imp-mode{display:flex;flex-direction:column;gap:10px;margin-bottom:4px}
+.imp-mode label{
+  display:flex;gap:10px;align-items:flex-start;padding:11px 13px;cursor:pointer;
+  border:1px solid var(--border);border-radius:12px;background:var(--surface-2);
+  transition:border-color .15s ease;
+}
+.imp-mode label:hover{border-color:var(--brand)}
+.imp-mode input{margin-top:3px;accent-color:var(--brand);flex:none}
+.imp-mode span{font-size:12.5px;color:var(--muted);line-height:1.5}
+.imp-mode b{display:block;font-size:13px;font-weight:620;color:var(--text)}
 
 @media (max-width:640px){
   .backup-actions{margin-left:0;width:100%}
-
-  /* The actions wrap onto their own line here, so the bar is taller and the
-     footer needs correspondingly more clearance. */
-  .backup-dock{padding-bottom:10px}
-  .foot{padding-bottom:150px}
 
   /* The header runs out of room once the property button is added, so the
      wordmark gives way to the logo on phones. */
@@ -135,4 +201,9 @@ button.bed-add:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
   .setup{flex-direction:column;align-items:flex-start}
   .page-head{flex-direction:column;align-items:flex-start}
   .empty{padding:34px 18px}
+
+  .imp-map-grid{grid-template-columns:1fr}
+  .imp-chip{flex:1 1 calc(50% - 5px)}
+  .imp-drop{padding:22px 14px}
+  .imp-preview{max-height:220px}
 }
