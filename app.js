@@ -92,8 +92,45 @@ const ICONS = {
   door: '<path d="M6 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/><path d="M4 21h16"/><circle cx="14" cy="12" r=".6"/>',
   wallet: '<path d="M3 7a2 2 0 0 1 2-2h11v3"/><rect x="3" y="7" width="18" height="12" rx="2.5"/><circle cx="16.5" cy="13" r="1"/>',
   rupee: '<circle cx="12" cy="12" r="9"/><path d="M9.5 8h5"/><path d="M9.5 10.5h5"/><path d="M13 10.5a2.5 2.5 0 0 1-2.5 2.5H9.5l4 4"/>',
-  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/>'
+  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/>',
+  receipt: '<path d="M6 3.5h12v17l-2.5-1.5-2.5 1.5-2.5-1.5L8 20.5 6 20.5Z"/><path d="M9.5 8.5h5"/><path d="M9.5 12h5"/>',
+  chart: '<path d="M4.5 20V11"/><path d="M10 20V4.5"/><path d="M15.5 20v-6"/><path d="M20.5 20V8"/>'
 };
+
+/* ---------- expenses ---------- */
+
+const EXPENSE_CATS = [
+  "Electricity", "Water", "Staff salary", "Groceries",
+  "Maintenance", "Internet", "Gas", "Rent to owner", "Other"
+];
+
+/* yyyy-mm for the month we are in, to match against an expense date. */
+function monthKey() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+}
+
+function expenseSummary() {
+  const list = PGStore.state().expenses || [];
+  const mk = monthKey();
+  const month = list.filter((x) => String(x.date).slice(0, 7) === mk);
+  const byCat = {};
+  month.forEach((x) => { byCat[x.category] = (byCat[x.category] || 0) + x.amount; });
+  const top = Object.keys(byCat).sort((a, b) => byCat[b] - byCat[a])[0] || "";
+  return {
+    list,
+    month,
+    monthTotal: month.reduce((s, x) => s + x.amount, 0),
+    allTotal: list.reduce((s, x) => s + x.amount, 0),
+    top,
+    topAmount: top ? byCat[top] : 0
+  };
+}
+
+/* money() has no sign handling, so negatives are built by hand. */
+function signedMoney(n) {
+  return (n < 0 ? "\u2212" : "") + money(Math.abs(n));
+}
 
 function statCard(s) {
   return `
@@ -312,6 +349,57 @@ function renderRent() {
       </li>`).join("");
 }
 
+function renderExpenses() {
+  const x = expenseSummary();
+  const t = totals();
+  const net = t.collected - x.monthTotal;
+
+  el("exp-title").textContent =
+    "Expenses \u2014 " + new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  el("exp-count").textContent = x.list.length
+    ? (x.list.length === 1 ? "1 entry" : x.list.length + " entries")
+    : "";
+
+  el("exp-stats").innerHTML = [
+    {
+      label: "Spent this month", value: money(x.monthTotal),
+      note: x.month.length === 1 ? "1 entry" : x.month.length + " entries",
+      cls: "warn", icon: "receipt", tone: "amber"
+    },
+    {
+      label: "Biggest cost", value: x.top ? esc(x.top) : "\u2014",
+      note: x.top ? money(x.topAmount) + " this month" : "Nothing logged yet",
+      icon: "chart", tone: "brand"
+    },
+    {
+      label: "Net this month", value: signedMoney(net),
+      note: money(t.collected) + " rent collected",
+      cls: net < 0 ? "warn" : "up", icon: "wallet", tone: net < 0 ? "red" : "green"
+    }
+  ].map(statCard).join("");
+
+  if (!x.list.length) {
+    el("exp-list").innerHTML =
+      '<li class="feed-blank">Nothing logged yet. Add electricity, water, staff pay and anything else the property costs you.</li>';
+    return;
+  }
+
+  el("exp-list").innerHTML = x.list.map((e) => {
+    const meta = [e.note, prettyDate(e.date)].filter(Boolean).map(esc).join(" \u00b7 ");
+    return `
+      <li>
+        <span class="pay-left">
+          <span class="ico ico-out" aria-hidden="true">\u20b9</span>
+          <span class="pay-name">${esc(e.category)}<span>${meta}</span></span>
+        </span>
+        <span class="pay-right">
+          <span class="amount">${money(e.amount)}</span>
+          <button class="link-btn link-danger" type="button" data-act="del-expense" data-exp="${esc(e.id)}">Remove</button>
+        </span>
+      </li>`;
+  }).join("");
+}
+
 function renderAll() {
   const s = PGStore.state();
   el("brand-prop").textContent = s.property || "Name your property";
@@ -322,6 +410,7 @@ function renderAll() {
   renderRooms();
   renderTenants();
   renderRent();
+  renderExpenses();
 }
 
 /* ---------- backup ---------- */
@@ -395,6 +484,13 @@ function openTenantDialog(roomId, bedIndex) {
   openDlg("dlg-tenant");
 }
 
+function openExpenseDialog() {
+  const sel = el("x-cat");
+  sel.innerHTML = EXPENSE_CATS.map((c) => `<option value="${c}">${c}</option>`).join("");
+  el("x-date").value = new Date().toISOString().slice(0, 10);
+  openDlg("dlg-expense");
+}
+
 /* ---------- actions ---------- */
 
 document.addEventListener("click", (e) => {
@@ -433,6 +529,14 @@ document.addEventListener("click", (e) => {
   } else if (act === "pay") {
     PGStore.setPaid(roomId, Number(bedIndex), btn.dataset.paid === "1");
     commit();
+  } else if (act === "add-expense") {
+    el("form-expense").reset();
+    openExpenseDialog();
+  } else if (act === "del-expense") {
+    if (confirm("Remove this expense?")) {
+      PGStore.removeExpense(btn.dataset.exp);
+      commit();
+    }
   } else if (act === "backup-now") {
     PGSheets.backupNow(PGStore.state());
   } else if (act === "backup-restore") {
@@ -472,6 +576,19 @@ el("form-tenant").addEventListener("submit", (e) => {
   });
   if (!res.ok) { showErr("t-err", res.error); return; }
   closeDlg("dlg-tenant");
+  commit();
+});
+
+el("form-expense").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const res = PGStore.addExpense({
+    category: el("x-cat").value,
+    amount: el("x-amt").value,
+    date: el("x-date").value,
+    note: el("x-note").value
+  });
+  if (!res.ok) { showErr("x-err", res.error); return; }
+  closeDlg("dlg-expense");
   commit();
 });
 
