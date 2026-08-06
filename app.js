@@ -324,6 +324,30 @@ function renderAll() {
   renderRent();
 }
 
+/* ---------- backup ---------- */
+
+function backupLabel(s) {
+  if (s.state === "off") { return "Sheet backup is not set up yet."; }
+  if (s.state === "saving") { return "Backing up to Google Sheets\u2026"; }
+  if (s.state === "error") { return "Backup failed. " + (s.error || ""); }
+  if (s.at) { return "Backed up to Google Sheets " + sinceLabel(s.at) + "."; }
+  return "Nothing backed up yet. Any change is saved to the sheet automatically.";
+}
+
+function renderBackup(s) {
+  const bar = el("backup");
+  if (!bar) { return; }
+  bar.className = "backup is-" + s.state;
+  el("backup-text").textContent = backupLabel(s);
+  el("backup-actions").hidden = !(window.PGSheets && PGSheets.enabled);
+}
+
+/* Redraw, then send the change to the sheet once typing settles. */
+function commit() {
+  renderAll();
+  if (window.PGSheets) { PGSheets.schedule(PGStore.state()); }
+}
+
 /* ---------- dialogs ---------- */
 
 function openDlg(id) {
@@ -396,19 +420,30 @@ document.addEventListener("click", (e) => {
   } else if (act === "del-room") {
     if (confirm("Remove this room? Any tenants in it are removed too.")) {
       PGStore.removeRoom(roomId);
-      renderAll();
+      commit();
     }
   } else if (act === "notice") {
     PGStore.toggleNotice(roomId, Number(bedIndex));
-    renderAll();
+    commit();
   } else if (act === "checkout") {
     if (confirm("Check this tenant out and free the bed?")) {
       PGStore.removeTenant(roomId, Number(bedIndex));
-      renderAll();
+      commit();
     }
   } else if (act === "pay") {
     PGStore.setPaid(roomId, Number(bedIndex), btn.dataset.paid === "1");
-    renderAll();
+    commit();
+  } else if (act === "backup-now") {
+    PGSheets.backupNow(PGStore.state());
+  } else if (act === "backup-restore") {
+    if (confirm("Replace everything on this account with the last backup from the sheet?")) {
+      PGSheets.restore().then((data) => {
+        PGStore.replaceAll(data);
+        renderAll();
+      }, (err) => {
+        alert(err && err.message ? err.message : "Could not restore from the sheet.");
+      });
+    }
   } else if (act === "close") {
     closeDlg(btn.dataset.dlg);
   }
@@ -424,7 +459,7 @@ el("form-room").addEventListener("submit", (e) => {
   });
   if (!res.ok) { showErr("r-err", res.error); return; }
   closeDlg("dlg-room");
-  renderAll();
+  commit();
 });
 
 el("form-tenant").addEventListener("submit", (e) => {
@@ -437,14 +472,14 @@ el("form-tenant").addEventListener("submit", (e) => {
   });
   if (!res.ok) { showErr("t-err", res.error); return; }
   closeDlg("dlg-tenant");
-  renderAll();
+  commit();
 });
 
 el("form-property").addEventListener("submit", (e) => {
   e.preventDefault();
   PGStore.setProperty(el("p-name").value);
   closeDlg("dlg-property");
-  renderAll();
+  commit();
 });
 
 /* ---------- navigation ---------- */
@@ -473,7 +508,13 @@ function greeting() {
 
 function boot(session) {
   const name = (session && session.name) || "Owner";
-  PGStore.use((session && session.id) || "local");
+  const accountId = (session && session.id) || "local";
+  PGStore.use(accountId);
+
+  if (window.PGSheets) {
+    PGSheets.use(accountId);
+    PGSheets.onStatus(renderBackup);
+  }
 
   el("greet").textContent = greeting() + ", " + String(name).split(" ")[0];
   el("avatar").textContent = initials(name);

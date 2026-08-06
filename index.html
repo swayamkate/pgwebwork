@@ -15,6 +15,7 @@
 <script src="config.js"></script>
 <script src="auth.js"></script>
 <script src="store.js"></script>
+<script src="sheets.js"></script>
 <script>
   // Hide the dashboard until we know whether a session exists, so a signed-out
   // visitor never sees the page before the redirect happens.
@@ -116,6 +117,15 @@
         </div>
         <ul class="feed" id="feed"></ul>
       </div>
+    </div>
+
+    <div class="backup is-off" id="backup">
+      <span class="backup-dot" aria-hidden="true"></span>
+      <span class="backup-text" id="backup-text">Sheet backup is not set up yet.</span>
+      <span class="backup-actions" id="backup-actions" hidden>
+        <button class="link-btn" type="button" data-act="backup-now">Back up now</button>
+        <button class="link-btn" type="button" data-act="backup-restore">Restore from sheet</button>
+      </span>
     </div>
   </section>
 
