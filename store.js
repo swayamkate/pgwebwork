@@ -266,6 +266,13 @@
       return out;
     },
 
+    /* Overwrite everything with a restored backup. */
+    replaceAll: function (raw) {
+      state = normalise(raw);
+      save();
+      return { ok: true };
+    },
+
     clearAll: function () {
       state = blank();
       save();
