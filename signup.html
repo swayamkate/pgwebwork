@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Create account — PG Manager</title>
+<title>Create your login — PG Manager</title>
 <meta name="theme-color" content="#0C0E14" />
+<meta name="robots" content="noindex, nofollow" />
 <script>try{var t=localStorage.getItem("pgTheme");if(t){document.documentElement.dataset.theme=t;}}catch(e){}</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%234F46E5'/%3E%3Cg fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 18v-8'/%3E%3Cpath d='M4 14h16v4'/%3E%3Cpath d='M20 14v-1.5a2 2 0 0 0-2-2h-7V14'/%3E%3C/g%3E%3C/svg%3E" />
 <link rel="stylesheet" href="styles.css" />
@@ -26,32 +27,47 @@
       <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18v-8"/><path d="M4 14h16v4"/><path d="M20 14v-1.5a2 2 0 0 0-2-2h-7V14"/></svg>
     </span>
 
-    <h1>Create your account</h1>
-    <p class="auth-sub">Set up a login for PG Manager</p>
+    <h1 id="head">Create your login</h1>
+    <p class="auth-sub" id="sub">You need an invite code from the property owner</p>
 
     <p class="auth-ok" id="confirm-note" role="status" hidden></p>
 
     <form id="signup-form" novalidate>
       <div class="field">
-        <label for="name">Full name</label>
-        <input id="name" name="name" type="text" autocomplete="name" placeholder="Swayam Kate" required />
+        <label for="name">Your name</label>
+        <input id="name" name="name" type="text" autocomplete="name" placeholder="Full name" required />
       </div>
 
       <div class="field">
         <label for="email">Email</label>
         <input id="email" name="email" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="you@example.com" required />
-        <p class="hint">You will sign in with this email.</p>
+        <p class="hint">You can add a shorter username later.</p>
+      </div>
+
+      <div class="field" id="invite-field">
+        <label for="invite">Invite code</label>
+        <input id="invite" name="invite" type="text" class="code-input" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19" required />
+        <p class="hint">One code opens one account, and only once.</p>
       </div>
 
       <div class="field">
         <label for="password">Password</label>
-        <input id="password" name="password" type="password" autocomplete="new-password" placeholder="••••••••" required />
-        <p class="hint">At least 6 characters.</p>
+        <span class="pw-wrap">
+          <input id="password" name="password" type="password" autocomplete="new-password" placeholder="At least 10 characters" required />
+          <button class="pw-eye" id="pw-eye" type="button" aria-label="Show password" aria-pressed="false" title="Show password">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </span>
+        <span class="pw-meter" id="pw-meter" hidden>
+          <span class="pw-bar"><i id="pw-fill"></i></span>
+          <span class="pw-label" id="pw-label"></span>
+        </span>
+        <p class="hint">Ten characters or more, mixing cases and numbers. A long phrase works too.</p>
       </div>
 
       <div class="field">
-        <label for="confirm">Confirm password</label>
-        <input id="confirm" name="confirm" type="password" autocomplete="new-password" placeholder="••••••••" required />
+        <label for="confirm">Repeat password</label>
+        <input id="confirm" name="confirm" type="password" autocomplete="new-password" placeholder="Type it once more" required />
       </div>
 
       <p class="auth-error" id="error" role="alert" hidden></p>
@@ -61,66 +77,122 @@
 
     <p class="auth-alt">Already have a login? <a href="login.html">Sign in</a></p>
 
-    <div class="auth-hint">
-      <b>Accounts</b>
-      <span>Stored in Supabase once the project keys are set in <code>config.js</code>.</span>
+    <div class="auth-hint" id="hint-box">
+      <b>Invite only</b>
+      <span>Nobody can open an account here without a code issued by the owner.</span>
     </div>
   </div>
 
-  <p class="auth-foot">PG Manager · static preview build v0.1</p>
+  <p class="auth-foot">PG Manager · build v0.3</p>
 </main>
 
 <script>
-  // Account creation is handled by auth.js: Supabase Auth when config.js is
-  // filled in, otherwise the browser-only demo mode.
   var form = document.getElementById("signup-form");
   var error = document.getElementById("error");
   var submit = document.getElementById("submit");
-  var note = document.getElementById("confirm-note");
+  var nameEl = document.getElementById("name");
+  var emailEl = document.getElementById("email");
+  var inviteEl = document.getElementById("invite");
+  var inviteField = document.getElementById("invite-field");
+  var pwEl = document.getElementById("password");
+  var cpwEl = document.getElementById("confirm");
+  var meter = document.getElementById("pw-meter");
+  var fill = document.getElementById("pw-fill");
+  var label = document.getElementById("pw-label");
+  var isFirst = false;
 
   function busy(on) {
     submit.disabled = on;
-    submit.textContent = on ? "Creating…" : "Create account";
+    submit.textContent = on ? "Creating\u2026" : (isFirst ? "Create owner account" : "Create account");
   }
 
-  function fail(msg, focusId) {
+  function fail(msg, focusOn) {
     error.textContent = msg;
     error.hidden = false;
     busy(false);
-    if (focusId) { document.getElementById(focusId).focus(); }
+    if (focusOn) { focusOn.focus(); }
   }
+
+  /* The very first account on a fresh property has nobody to invite it, so it
+     is allowed straight through and becomes the owner. Every account after
+     that needs a code, and only the owner can hand those out. */
+  PGAuth.needsBootstrap().then(function (first) {
+    if (!first) { return; }
+    isFirst = true;
+    document.getElementById("head").textContent = "Set up the owner account";
+    document.getElementById("sub").textContent =
+      "This is the first login for this property. You will be the owner.";
+    inviteEl.required = false;
+    inviteEl.value = "";
+    inviteField.hidden = true;
+    document.getElementById("hint-box").innerHTML =
+      "<b>One time only<\/b><span>Once this account exists, every further login needs an invite code that you issue.<\/span>";
+    submit.textContent = "Create owner account";
+  }, function () {});
+
+  // Group the code in fours as it is typed, so it matches how it was handed out.
+  inviteEl.addEventListener("input", function () {
+    var raw = inviteEl.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 16);
+    var out = "";
+    for (var i = 0; i < raw.length; i++) {
+      if (i && i % 4 === 0) { out += "-"; }
+      out += raw.charAt(i);
+    }
+    inviteEl.value = out;
+  });
+
+  pwEl.addEventListener("input", function () {
+    var pw = pwEl.value;
+    if (!pw) { meter.hidden = true; return; }
+    var read = PGAuth.passwordScore(pw);
+    meter.hidden = false;
+    meter.dataset.score = String(read.score);
+    fill.style.width = (read.score * 25) + "%";
+    label.textContent = read.label;
+  });
+
+  document.getElementById("pw-eye").addEventListener("click", function () {
+    var shown = pwEl.type === "text";
+    pwEl.type = shown ? "password" : "text";
+    cpwEl.type = shown ? "password" : "text";
+    this.setAttribute("aria-pressed", String(!shown));
+    this.setAttribute("aria-label", shown ? "Show password" : "Hide password");
+    pwEl.focus();
+  });
 
   form.addEventListener("submit", function (e) {
     e.preventDefault();
+    if (submit.disabled) { return; }
 
-    var name = document.getElementById("name").value.trim();
-    var email = document.getElementById("email").value.trim();
-    var pw = document.getElementById("password").value;
-    var cpw = document.getElementById("confirm").value;
+    var name = nameEl.value.trim();
+    var email = emailEl.value.trim();
+    var invite = inviteEl.value.trim();
+    var pw = pwEl.value;
+    var cpw = cpwEl.value;
 
-    if (!name) { return fail("Please enter your name.", "name"); }
-    if (!PGAuth.isEmail(email)) { return fail("Enter a valid email address.", "email"); }
-    if (pw.length < 6) { return fail("Password must be at least 6 characters.", "password"); }
-    if (pw !== cpw) { return fail("Passwords do not match.", "confirm"); }
+    if (!name) { return fail("Enter your name.", nameEl); }
+    if (!PGAuth.isEmail(email)) { return fail("Enter a valid email address.", emailEl); }
+    if (!isFirst && !invite) { return fail("Enter the invite code you were given.", inviteEl); }
+    if (pw !== cpw) { return fail("The two passwords do not match.", cpwEl); }
 
     busy(true);
 
-    PGAuth.signUp(name, email, pw).then(function (res) {
-      if (!res.ok) {
-        return fail(res.error || "Could not create the account.", "email");
-      }
-      if (res.needsConfirm) {
-        // Supabase is set to confirm email addresses before the first sign-in.
-        error.hidden = true;
-        form.hidden = true;
-        note.textContent = "Almost done — check " + email + " for a confirmation link, then sign in.";
-        note.hidden = false;
-        return;
-      }
-      location.replace("login.html?new=1");
-    }, function () {
-      fail("Could not create the account right now. Try again.", null);
-    });
+    PGAuth.signUp({ name: name, email: email, password: pw, invite: isFirst ? "" : invite })
+      .then(function (res) {
+        if (!res.ok) { return fail(res.error || "Could not create the account."); }
+
+        if (res.needsConfirm) {
+          form.hidden = true;
+          var note = document.getElementById("confirm-note");
+          note.textContent = "Almost done \u2014 check " + email +
+            " for a confirmation link, then sign in.";
+          note.hidden = false;
+          return;
+        }
+        location.replace("login.html?new=1");
+      }, function () {
+        fail("Could not create the account right now. Try again.");
+      });
   });
 
   form.addEventListener("input", function () { error.hidden = true; });
