@@ -14,7 +14,7 @@
   var state = blank();
 
   function blank() {
-    return { property: "", rooms: [], activity: [], cycle: cycleId() };
+    return { property: "", rooms: [], activity: [], expenses: [], cycle: cycleId() };
   }
 
   function cycleId() {
@@ -24,6 +24,18 @@
 
   function isArray(v) {
     return Object.prototype.toString.call(v) === "[object Array]";
+  }
+
+  function today() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  /* Newest first. Dates are ISO yyyy-mm-dd, so a plain string compare works. */
+  function sortExpenses(list) {
+    list.sort(function (a, b) {
+      if (a.date === b.date) { return 0; }
+      return a.date < b.date ? 1 : -1;
+    });
   }
 
   function uid() {
@@ -69,6 +81,23 @@
       out.activity = raw.activity.filter(function (a) {
         return a && typeof a === "object";
       }).slice(0, 20);
+    }
+
+    /* Backups written before expenses existed simply have no list, which is
+       normal rather than corrupt, so it falls through to the blank array. */
+    if (isArray(raw.expenses)) {
+      out.expenses = raw.expenses.filter(function (x) {
+        return x && typeof x === "object";
+      }).map(function (x) {
+        return {
+          id: x.id || uid(),
+          date: clean(x.date, 24) || today(),
+          category: clean(x.category, 30) || "Other",
+          note: clean(x.note, 80),
+          amount: Math.max(0, Number(x.amount) || 0)
+        };
+      }).slice(0, 500);
+      sortExpenses(out.expenses);
     }
 
     return out;
@@ -264,6 +293,43 @@
         });
       });
       return out;
+    },
+
+    /* Expenses are history, so a new month never clears them. */
+    addExpense: function (data) {
+      var amount = Math.max(0, Number(data.amount) || 0);
+      var category = clean(data.category, 30) || "Other";
+
+      if (!(amount > 0)) { return { ok: false, error: "Enter an amount above zero." }; }
+
+      var entry = {
+        id: uid(),
+        date: clean(data.date, 24) || today(),
+        category: category,
+        note: clean(data.note, 80),
+        amount: amount
+      };
+
+      state.expenses.push(entry);
+      sortExpenses(state.expenses);
+
+      log("out", category + " expense of \u20b9" + amount.toLocaleString("en-IN"), entry.note || "");
+      save();
+      return { ok: true };
+    },
+
+    removeExpense: function (id) {
+      var gone = null;
+      state.expenses = state.expenses.filter(function (x) {
+        if (x.id === id) { gone = x; return false; }
+        return true;
+      });
+      if (!gone) { return { ok: false, error: "That expense is gone already." }; }
+
+      log("in", "Expense removed",
+        gone.category + " \u00b7 \u20b9" + gone.amount.toLocaleString("en-IN"));
+      save();
+      return { ok: true };
     },
 
     /* Overwrite everything with a restored backup. */

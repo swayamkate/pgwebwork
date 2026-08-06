@@ -73,6 +73,7 @@
       <button class="tab" data-view="beds">Beds</button>
       <button class="tab" data-view="tenants">Tenants</button>
       <button class="tab" data-view="rent">Rent</button>
+      <button class="tab" data-view="expenses">Expenses</button>
     </div>
   </div>
 </nav>
@@ -184,6 +185,25 @@
     </div>
   </section>
 
+  <!-- EXPENSES -->
+  <section class="view" id="view-expenses">
+    <div class="page-head">
+      <div>
+        <h1 id="exp-title">Expenses</h1>
+        <p class="sub">What the property costs you to run each month.</p>
+      </div>
+      <button class="btn-primary btn-sm" data-act="add-expense" type="button">Add expense</button>
+    </div>
+    <div class="stats stats-3" id="exp-stats"></div>
+    <div class="card">
+      <div class="card-head">
+        <h2>Spending log</h2>
+        <span class="muted-sm" id="exp-count"></span>
+      </div>
+      <ul class="paylist" id="exp-list"></ul>
+    </div>
+  </section>
+
 </main>
 
 <footer class="foot">
@@ -239,6 +259,24 @@
     <div class="dlg-foot">
       <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-property">Cancel</button>
       <button class="btn-primary btn-sm" type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ADD EXPENSE -->
+<dialog class="dlg" id="dlg-expense">
+  <form class="dlg-card" id="form-expense">
+    <h3>Add an expense</h3>
+    <div class="form-grid">
+      <label class="field"><span>Category</span><select id="x-cat" required></select></label>
+      <label class="field"><span>Amount (₹)</span><input id="x-amt" type="number" min="1" step="1" placeholder="2500" required /></label>
+      <label class="field"><span>Date</span><input id="x-date" type="date" required /></label>
+      <label class="field"><span>Note (optional)</span><input id="x-note" maxlength="80" placeholder="July bill" /></label>
+    </div>
+    <p class="auth-error" id="x-err" hidden></p>
+    <div class="dlg-foot">
+      <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-expense">Cancel</button>
+      <button class="btn-primary btn-sm" type="submit">Add expense</button>
     </div>
   </form>
 </dialog>
