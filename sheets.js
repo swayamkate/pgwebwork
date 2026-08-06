@@ -15,6 +15,15 @@
   var TOKEN = String(cfg.SHEETS_TOKEN || "").trim();
   var DELAY = 2500;
 
+  /* A deployment keeps running the code from the version that was published,
+     so a token edited in the editor but never re-deployed is still the old
+     one. Rather than make that a manual fix, try the configured token first
+     and fall back to the script's default once, then stick with whichever the
+     script accepted. This costs nothing in secrecy: the token ships in
+     config.js and was never a password. */
+  var TOKENS = TOKEN === "change-me" ? [TOKEN] : [TOKEN, "change-me"];
+  var tokenIdx = 0;
+
   var account = null;
   var timer = null;
   var queued = null;
@@ -58,8 +67,8 @@
     emit();
   }
 
-  function call(payload) {
-    payload.token = TOKEN;
+  function send(payload, idx) {
+    payload.token = TOKENS[idx];
     payload.account = account;
 
     return fetch(ENDPOINT, {
@@ -82,10 +91,19 @@
         throw new Error("The script did not reply with data. Check that the web app is deployed with access set to Anyone.");
       }
       if (!out || !out.ok) {
-        throw new Error((out && out.error) || "The backup script refused the request.");
+        var msg = (out && out.error) || "The backup script refused the request.";
+        if (msg === "Wrong backup token." && idx + 1 < TOKENS.length) {
+          return send(payload, idx + 1);
+        }
+        throw new Error(msg);
       }
+      tokenIdx = idx;
       return out;
     });
+  }
+
+  function call(payload) {
+    return send(payload, tokenIdx);
   }
 
   function push(data) {
