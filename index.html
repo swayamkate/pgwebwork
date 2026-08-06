@@ -34,7 +34,8 @@
   try {
     PGAuth.session().then(function (s) {
       if (!s.signedIn) {
-        location.replace("login.html");
+        // Carry the reason across so the login page can say why it ended.
+        location.replace("login.html" + (s.reason ? "?out=" + s.reason : ""));
         return;
       }
       pgReveal();
@@ -251,13 +252,30 @@
         <div id="rate-list"></div>
       </div>
     </div>
+
+    <div class="card" id="access-card">
+      <div class="card-head">
+        <h2>Account &amp; access</h2>
+        <span class="muted-sm" id="access-mode"></span>
+      </div>
+      <div id="account-body"></div>
+    </div>
+
+    <div class="card" id="invite-card" hidden>
+      <div class="card-head">
+        <h2>People &amp; invites</h2>
+        <button class="link-btn" type="button" data-act="new-invite">Create an invite</button>
+      </div>
+      <div id="people-list"></div>
+      <div id="invite-list"></div>
+    </div>
   </section>
 
 </main>
 
 <footer class="foot">
   <div class="wrap foot-in">
-    <span>PG Manager · build v0.2</span>
+    <span>PG Manager · build v0.3</span>
     <span class="muted-sm">Your data is saved in this browser, per login</span>
   </div>
 </footer>
@@ -420,8 +438,80 @@
   </div>
 </dialog>
 
+<!-- USERNAME -->
+<dialog class="dlg" id="dlg-username">
+  <form class="dlg-card" id="form-username">
+    <h3 id="un-head">Set a username</h3>
+    <p class="dlg-sub">A short name you can sign in with instead of your email.</p>
+    <div class="form-grid">
+      <label class="field span-2"><span>Username</span><input id="un-name" maxlength="20" autocapitalize="none" spellcheck="false" placeholder="swayam" required /></label>
+    </div>
+    <p class="hint">3 to 20 characters using letters, numbers, dot, dash or underscore. No two accounts can share one.</p>
+    <p class="auth-error" id="un-err" hidden></p>
+    <div class="dlg-foot">
+      <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-username">Cancel</button>
+      <button class="btn-primary btn-sm" type="submit">Save username</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- PASSWORD -->
+<dialog class="dlg" id="dlg-password">
+  <form class="dlg-card" id="form-password">
+    <h3>Change your password</h3>
+    <p class="dlg-sub">Every other signed-in device is signed out when you do this.</p>
+    <div class="form-grid">
+      <label class="field span-2"><span>Current password</span><input id="cp-cur" type="password" autocomplete="current-password" required /></label>
+      <label class="field span-2"><span>New password</span><input id="cp-new" type="password" autocomplete="new-password" placeholder="At least 10 characters" required /></label>
+      <label class="field span-2"><span>Repeat new password</span><input id="cp-conf" type="password" autocomplete="new-password" required /></label>
+    </div>
+    <span class="pw-meter" id="cp-meter" hidden>
+      <span class="pw-bar"><i id="cp-fill"></i></span>
+      <span class="pw-label" id="cp-label"></span>
+    </span>
+    <p class="auth-error" id="cp-err" hidden></p>
+    <div class="dlg-foot">
+      <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-password">Cancel</button>
+      <button class="btn-primary btn-sm" type="submit">Change password</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- CREATE AN INVITE -->
+<dialog class="dlg" id="dlg-invite">
+  <form class="dlg-card" id="form-invite">
+    <h3>Create an invite</h3>
+    <p class="dlg-sub">One code, one account, used once. Nobody can sign up without one.</p>
+    <div class="form-grid">
+      <label class="field span-2"><span>Who is it for <i class="field-opt">optional</i></span><input id="iv-label" maxlength="40" placeholder="Ramesh, front desk" /></label>
+      <label class="field"><span>They join as</span><select id="iv-role"><option value="staff">Staff</option><option value="owner">Owner</option></select></label>
+      <label class="field"><span>Good for</span><select id="iv-days"><option value="1">1 day</option><option value="7" selected>7 days</option><option value="30">30 days</option></select></label>
+    </div>
+    <p class="auth-error" id="iv-err" hidden></p>
+    <div class="dlg-foot">
+      <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-invite">Cancel</button>
+      <button class="btn-primary btn-sm" type="submit">Create code</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- THE CODE, SHOWN ONCE -->
+<dialog class="dlg" id="dlg-code">
+  <div class="dlg-card">
+    <h3>Invite code</h3>
+    <p class="dlg-sub">Copy it now. Only a scrambled version is stored, so it cannot be shown again.</p>
+    <p class="code-out" id="code-out"></p>
+    <p class="hint" id="code-sub"></p>
+    <div class="dlg-foot">
+      <button class="btn-ghost" type="button" data-act="copy-code">Copy code</button>
+      <button class="btn-primary btn-sm" type="button" data-act="close" data-dlg="dlg-code">Done</button>
+    </div>
+  </div>
+</dialog>
+
 <script src="app.js"></script>
 <script src="import.js"></script>
 <script src="profile.js"></script>
+<script src="account.js"></script>
 </body>
 </html>
