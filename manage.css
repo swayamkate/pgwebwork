@@ -350,3 +350,45 @@ button.bed-add:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 
 /* A hidden field must lose its flex box, or it keeps its grid slot. */
 .form-grid .field[hidden]{display:none}
+
+/* ---------- account and access ---------- */
+
+/* .card carries its own display, which beats the browser's [hidden] rule. */
+.card[hidden]{display:none}
+
+.dlg-sub{margin:-4px 0 16px;font-size:13px;line-height:1.55;color:var(--muted)}
+
+.acc-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.acc-note{margin:14px 0 0;font-size:12.5px;line-height:1.6;color:var(--muted)}
+.acc-flash{margin:14px 0 0;padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.5;background:var(--brand-soft);color:var(--brand)}
+
+.acc-sec{margin-top:18px}
+.acc-sec:first-child{margin-top:0}
+.acc-sec h4{margin:0 0 10px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+
+.acc-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 0;border-top:1px solid var(--border)}
+.acc-sec h4 + .acc-row{border-top:0}
+.acc-row .pay-right{display:flex;align-items:center;gap:12px;flex:0 0 auto}
+
+.acc-you{font-style:normal;font-size:11px;font-weight:600;color:var(--faint)}
+
+/* The first four characters of a code, so a row can be told apart without
+   storing anything that could be used to sign up. */
+.code-chip{display:grid;place-items:center;flex:0 0 auto;width:31px;height:31px;border-radius:9px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;font-weight:700;letter-spacing:.02em;background:var(--surface-3);color:var(--muted)}
+
+.code-out{margin:0 0 8px;padding:16px 12px;border:1px dashed var(--border-strong);border-radius:12px;background:var(--surface-2);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:19px;font-weight:700;letter-spacing:.1em;text-align:center;color:var(--text);word-break:break-all;user-select:all}
+
+@media (max-width:640px){
+  .acc-row{align-items:flex-start;flex-direction:column;gap:8px}
+  .acc-row .pay-right{width:100%;justify-content:space-between}
+  .acc-actions .btn-sm{flex:1 1 auto}
+  .code-out{font-size:16px;letter-spacing:.06em}
+}
+
+/* The name and the line under it are siblings inside one inline span, so they
+   run together unless that span is made a column of its own. */
+.acc-row .pay-left{min-width:0}
+.acc-row .pay-left > span:last-child{display:flex;flex-direction:column;gap:2px;min-width:0}
+.acc-row .pay-name{display:block;line-height:1.35}
+.acc-row .muted-sm{line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acc-you{margin-left:6px}
