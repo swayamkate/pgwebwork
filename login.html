@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Sign in — PG Manager</title>
 <meta name="theme-color" content="#0C0E14" />
+<meta name="robots" content="noindex, nofollow" />
 <script>try{var t=localStorage.getItem("pgTheme");if(t){document.documentElement.dataset.theme=t;}}catch(e){}</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%234F46E5'/%3E%3Cg fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 18v-8'/%3E%3Cpath d='M4 14h16v4'/%3E%3Cpath d='M20 14v-1.5a2 2 0 0 0-2-2h-7V14'/%3E%3C/g%3E%3C/svg%3E" />
 <link rel="stylesheet" href="styles.css" />
@@ -27,19 +28,25 @@
     </span>
 
     <h1>Sign in to PG Manager</h1>
-    <p class="auth-sub">Owner access for Sunrise Boys PG</p>
+    <p class="auth-sub">Private access for the property owner and staff</p>
 
     <p class="auth-ok" id="created" role="status" hidden>Account created. Sign in below.</p>
+    <p class="auth-note" id="reason" role="status" hidden></p>
 
     <form id="login-form" novalidate>
       <div class="field">
-        <label for="email">Email</label>
-        <input id="email" name="email" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="you@example.com" required />
+        <label for="who">Email or username</label>
+        <input id="who" name="who" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="you@example.com" required />
       </div>
 
       <div class="field">
         <label for="password">Password</label>
-        <input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••" required />
+        <span class="pw-wrap">
+          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••••" required />
+          <button class="pw-eye" id="pw-eye" type="button" aria-label="Show password" aria-pressed="false" title="Show password">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </span>
       </div>
 
       <p class="auth-error" id="error" role="alert" hidden></p>
@@ -47,27 +54,30 @@
       <button class="btn-primary" id="submit" type="submit">Sign in</button>
     </form>
 
-    <p class="auth-alt">No account yet? <a href="signup.html">Create one</a></p>
+    <p class="auth-alt" id="alt">Have an invite code? <a href="signup.html">Create your login</a></p>
 
     <div class="auth-hint">
-      <b>Demo access</b>
-      <span>Email <code>admin</code> · Password <code>pass</code></span>
+      <b>This door is watched</b>
+      <span>Wrong guesses slow the login down and then lock it. You are signed out after 30 idle minutes.</span>
     </div>
   </div>
 
-  <p class="auth-foot">PG Manager · static preview build v0.1</p>
+  <p class="auth-foot">PG Manager · build v0.3</p>
 </main>
 
 <script>
-  // Sign-in is handled by auth.js: Supabase Auth when config.js is filled in,
-  // otherwise the browser-only demo mode.
+  // Sign-in runs through auth.js: Supabase when config.js holds project keys,
+  // otherwise the hashed browser-local accounts.
   var form = document.getElementById("login-form");
   var error = document.getElementById("error");
   var submit = document.getElementById("submit");
+  var who = document.getElementById("who");
+  var pass = document.getElementById("password");
+  var ticker = null;
 
   function busy(on) {
     submit.disabled = on;
-    submit.textContent = on ? "Signing in…" : "Sign in";
+    submit.textContent = on ? "Checking\u2026" : "Sign in";
   }
 
   function fail(msg) {
@@ -76,13 +86,38 @@
     busy(false);
   }
 
+  /* While a lock is running the button counts itself down, so nobody sits
+     there retyping into a form that cannot accept anything yet. */
+  function holdFor(ms) {
+    if (ticker) { clearInterval(ticker); }
+    var until = Date.now() + ms;
+
+    function step() {
+      var left = Math.ceil((until - Date.now()) / 1000);
+      if (left <= 0) {
+        clearInterval(ticker);
+        ticker = null;
+        submit.disabled = false;
+        submit.textContent = "Sign in";
+        return;
+      }
+      var mins = Math.floor(left / 60);
+      var secs = left % 60;
+      submit.textContent = "Locked \u2014 " + (mins ? mins + "m " : "") + secs + "s";
+    }
+
+    submit.disabled = true;
+    step();
+    ticker = setInterval(step, 1000);
+  }
+
   form.addEventListener("submit", function (e) {
     e.preventDefault();
+    if (submit.disabled) { return; }
 
-    var id = document.getElementById("email").value.trim();
-    var pw = document.getElementById("password").value;
-
-    if (!id || !pw) { return fail("Enter your email and password."); }
+    var id = who.value.trim();
+    var pw = pass.value;
+    if (!id || !pw) { return fail("Enter your login and password."); }
 
     busy(true);
 
@@ -91,9 +126,9 @@
         location.replace("index.html");
         return;
       }
-      document.getElementById("password").value = "";
-      fail(res.error || "Wrong email or password. Try again.");
-      document.getElementById("password").focus();
+      pass.value = "";
+      fail(res.error || "Wrong login or password.");
+      if (res.waitMs > 0) { holdFor(res.waitMs); } else { pass.focus(); }
     }, function () {
       fail("Could not sign in right now. Try again.");
     });
@@ -101,10 +136,37 @@
 
   form.addEventListener("input", function () { error.hidden = true; });
 
-  // Confirmation banner after arriving from signup.html
+  document.getElementById("pw-eye").addEventListener("click", function () {
+    var shown = pass.type === "text";
+    pass.type = shown ? "password" : "text";
+    this.setAttribute("aria-pressed", String(!shown));
+    this.setAttribute("aria-label", shown ? "Show password" : "Hide password");
+    pass.focus();
+  });
+
   if (/[?&]new=1/.test(location.search)) {
     document.getElementById("created").hidden = false;
   }
+
+  // index.html sends people here with a reason when a session runs out.
+  var out = /[?&]out=([a-z]+)/.exec(location.search);
+  var REASONS = {
+    idle: "You were signed out after 30 minutes of no activity.",
+    expired: "That session reached its 12 hour limit. Sign in again.",
+    stale: "Your password changed, so every other session was signed out."
+  };
+  if (out && REASONS[out[1]]) {
+    var note = document.getElementById("reason");
+    note.textContent = REASONS[out[1]];
+    note.hidden = false;
+  }
+
+  // Before any account exists, point the first visitor at setting one up.
+  PGAuth.needsBootstrap().then(function (first) {
+    if (!first) { return; }
+    document.getElementById("alt").innerHTML =
+      'No account exists yet. <a href="signup.html">Set up the owner login</a>';
+  }, function () {});
 
   document.getElementById("theme-toggle").addEventListener("click", function () {
     var next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
