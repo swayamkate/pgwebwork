@@ -11,7 +11,7 @@
 */
 (function (global) {
   var cfg = global.PG_CONFIG || {};
-  var ENDPOINT = String(cfg.https://script.google.com/macros/s/AKfycbwlnwmGvn-k-i-SUZDz1emnsLfqHNUdWXLBFlDL-x2Aw7pRaFjGNVuJ53E-tZjllLsYGw/exec || "").trim();
+  var ENDPOINT = String(cfg.SHEETS_URL || "").trim();
   var TOKEN = String(cfg.SHEETS_TOKEN || "").trim();
   var DELAY = 2500;
 
