@@ -15,10 +15,12 @@ Live: https://pg.swayamkate.com/
 | `config.js` | **Supabase project URL and anon key go here** |
 | `auth.js` | Shared auth layer (Supabase, with demo fallback) |
 | `store.js` | Per-account data store: rooms, tenants, payments, activity |
+| `sheets.js` | Google Sheets backup client |
 | `app.js` | Rendering, dialogs, tabs, theme and logout |
 | `styles.css` | Light + dark theme, all components |
 | `manage.css` | Empty states, dialogs and row actions |
 | `404.html` | Not-found page |
+| `apps-script/Code.gs` | The Google Apps Script that writes the backup sheet |
 
 ## Data
 
@@ -42,8 +44,57 @@ Paid flags reset automatically at the start of each month.
 ### Limits of browser storage
 
 The data lives in one browser on one device. Clearing site data wipes it, and it
-does not sync between your phone and laptop. Moving the rooms and tenants into
-Supabase tables is the next step — see below.
+does not sync between your phone and laptop.
+
+The Google Sheets backup below covers the first risk: if the browser is cleared,
+the data can be pulled back out of the sheet. It does not fix the second — the
+site still reads from local storage on load, not from the sheet. Moving rooms and
+tenants into Supabase tables is the real fix for that.
+
+## Google Sheets backup
+
+Every change is copied into a Google Sheet a couple of seconds after you make it.
+Each account gets **its own tab**, named after the account, plus a `_data` tab
+holding the exact JSON used for restores.
+
+The status sits at the bottom of the Overview tab, with **Back up now** and
+**Restore from sheet** beside it.
+
+### Setting it up
+
+1. Create a new Google Sheet. This one spreadsheet holds every account's tab.
+2. In that sheet, open **Extensions → Apps Script**.
+3. Delete the placeholder code and paste in all of `apps-script/Code.gs`.
+4. Change `TOKEN` at the top to any random string.
+5. **Deploy → New deployment → Web app**, with:
+   - Execute as: **Me**
+   - Who has access: **Anyone**
+6. Authorise it when Google asks. The "unverified app" warning is expected for
+   your own script — open **Advanced** and continue.
+7. Copy the **/exec** URL it gives you into `config.js`:
+
+   ```js
+   SHEETS_URL: "https://script.google.com/macros/s/AKfy.../exec",
+   SHEETS_TOKEN: "the-same-token-you-set-in-the-script"
+   ```
+
+8. Commit and push. Until `SHEETS_URL` is filled in, the bar reads "Sheet backup
+   is not set up yet" and nothing is sent anywhere.
+
+If you edit the script later, deploy again with **Manage deployments → Edit →
+Version: New version**, or the old code keeps serving.
+
+### What this is not
+
+The spreadsheet is **yours**, not each user's. Everyone's data lands in tabs of
+one sheet in your Drive.
+
+More importantly: the script URL and token are both visible in the page source,
+because a static site has nowhere private to keep them. Anyone who reads the
+source can write to — or read — any account's tab. The token only keeps random
+crawlers out; it is not a password. Fine for a backup of your own property, not
+fine if you ever have real, unrelated customers. That is the point at which the
+Supabase tables below stop being optional.
 
 ## Connecting Supabase
 
