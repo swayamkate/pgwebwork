@@ -19,6 +19,6 @@
 window.PG_CONFIG = {
   SUPABASE_URL: "",
   SUPABASE_ANON_KEY: "",
-  SHEETS_URL: "",
-  SHEETS_TOKEN: ""
+  SHEETS_URL: "https://script.google.com/macros/s/AKfycbwlnwmGvn-k-i-SUZDz1emnsLfqHNUdWXLBFlDL-x2Aw7pRaFjGNVuJ53E-tZjllLsYGw/exec",
+  SHEETS_TOKEN: "pg-swayam-9f3k2mx7qz"
 };
