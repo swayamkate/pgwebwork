@@ -60,6 +60,9 @@
     <div class="topbar-right">
       <button class="btn-ghost" data-act="name-property" type="button">Property name</button>
       <span class="avatar" id="avatar" title="Owner">?</span>
+      <button class="icon-btn" data-act="rate-card" type="button" aria-label="Rate card" title="Rate card">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 4.8H4.8V12l8.6 8.6a1.7 1.7 0 0 0 2.4 0l4.8-4.8a1.7 1.7 0 0 0 0-2.4Z"/><circle cx="8.6" cy="8.6" r="1.1"/></svg>
+      </button>
       <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch colour theme" title="Switch colour theme">
         <svg class="i-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></svg>
         <svg class="i-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
@@ -77,6 +80,7 @@
       <button class="tab" data-view="tenants">Tenants</button>
       <button class="tab" data-view="rent">Rent</button>
       <button class="tab" data-view="expenses">Expenses</button>
+      <button class="tab" data-view="owner">Owner</button>
     </div>
   </div>
 </nav>
@@ -110,7 +114,7 @@
     <div class="cols">
       <div class="card">
         <div class="card-head">
-          <h2>Occupancy by floor</h2>
+          <h2 id="occ-head">Occupancy by floor</h2>
           <span class="muted-sm" id="occ-total"></span>
         </div>
         <div class="bars" id="floor-bars"></div>
@@ -214,6 +218,41 @@
     </div>
   </section>
 
+  <!-- OWNER -->
+  <section class="view" id="view-owner">
+    <div class="page-head">
+      <div>
+        <h1>Owner &amp; settings</h1>
+        <p class="sub">Your details, how this PG is laid out, and a rate card you can pull up any time.</p>
+      </div>
+      <div class="head-actions">
+        <button class="btn-ghost btn-sm" data-act="rate-card" type="button">Rate card</button>
+        <button class="btn-primary btn-sm" data-act="edit-owner" type="button">Edit details</button>
+      </div>
+    </div>
+
+    <div class="card" id="owner-card"></div>
+
+    <div class="cols">
+      <div class="card">
+        <div class="card-head">
+          <h2>PG settings</h2>
+          <span class="muted-sm">Saved as you change them</span>
+        </div>
+        <div id="settings-list"></div>
+        <p class="set-preview" id="set-preview"></p>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Rate card</h2>
+          <button class="link-btn" type="button" data-act="add-rate">Add a rate</button>
+        </div>
+        <div id="rate-list"></div>
+      </div>
+    </div>
+  </section>
+
 </main>
 
 <footer class="foot">
@@ -229,7 +268,7 @@
     <h3>Add a room</h3>
     <div class="form-grid">
       <label class="field"><span>Room number</span><input id="r-no" maxlength="12" placeholder="101" required /></label>
-      <label class="field"><span>Floor</span><input id="r-floor" type="number" min="0" max="50" value="1" required /></label>
+      <label class="field" id="r-floor-field"><span>Floor</span><input id="r-floor" type="number" min="0" max="50" value="1" /></label>
       <label class="field"><span>Beds in room</span><input id="r-beds" type="number" min="1" max="8" value="3" required /></label>
       <label class="field"><span>Rent per bed (₹)</span><input id="r-rent" type="number" min="0" step="100" value="8000" required /></label>
     </div>
@@ -331,6 +370,52 @@
         <button class="btn-ghost" type="button" data-act="imp-back">Back</button>
         <button class="btn-primary btn-sm" type="button" id="imp-apply" data-act="imp-apply">Import</button>
       </div>
+    </div>
+  </div>
+</dialog>
+
+<!-- OWNER DETAILS -->
+<dialog class="dlg" id="dlg-owner">
+  <form class="dlg-card" id="form-owner">
+    <h3>Your details</h3>
+    <div class="form-grid">
+      <label class="field span-2"><span>Your name</span><input id="o-name" maxlength="60" placeholder="Swayam Kate" required /></label>
+      <label class="field span-2"><span>Phone <i class="field-opt">optional</i></span><input id="o-phone" maxlength="24" placeholder="+91 98765 43210" /></label>
+      <label class="field span-2"><span>Property address <i class="field-opt">optional</i></span><input id="o-address" maxlength="120" placeholder="Street, area, city" /></label>
+    </div>
+    <p class="auth-error" id="o-err" hidden></p>
+    <div class="dlg-foot">
+      <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-owner">Cancel</button>
+      <button class="btn-primary btn-sm" type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ADD A RATE -->
+<dialog class="dlg" id="dlg-rate">
+  <form class="dlg-card" id="form-rate">
+    <h3>Add a rate</h3>
+    <div class="form-grid">
+      <label class="field span-2"><span>What it covers</span><input id="ra-label" maxlength="40" placeholder="2 sharing, AC" required /></label>
+      <label class="field"><span>Rent per bed (₹)</span><input id="ra-amt" type="number" min="0" step="100" placeholder="8500" required /></label>
+      <label class="field"><span>Note <i class="field-opt">optional</i></span><input id="ra-note" maxlength="60" placeholder="food included" /></label>
+    </div>
+    <p class="auth-error" id="ra-err" hidden></p>
+    <div class="dlg-foot">
+      <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-rate">Cancel</button>
+      <button class="btn-primary btn-sm" type="submit">Add rate</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- RATE CARD -->
+<dialog class="dlg" id="dlg-rates">
+  <div class="dlg-card">
+    <h3>Rate card</h3>
+    <div id="rates-body"></div>
+    <div class="dlg-foot">
+      <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-rates">Close</button>
+      <button class="btn-primary btn-sm" type="button" data-act="add-rate">Add a rate</button>
     </div>
   </div>
 </dialog>
