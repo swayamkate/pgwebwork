@@ -59,7 +59,7 @@ function tenants() {
         roomId: room.id,
         roomNo: room.no,
         bedIndex: i,
-        bed: PGStore.bedLabel(i),
+        bed: PGStore.bedLabel(i, room.id),
         rent: room.rent
       });
     });
@@ -170,13 +170,34 @@ function renderStats() {
   ].map(statCard).join("");
 }
 
+function occBar(name, filled, total) {
+  const pct = total ? Math.round((filled / total) * 100) : 0;
+  return `
+    <div>
+      <div class="bar-row-top"><span>${esc(name)}</span><b>${filled}/${total} · ${pct}%</b></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+    </div>`;
+}
+
+/* An owner with floors switched off gets the same bars counted by room. */
 function renderFloors() {
-  const rooms = PGStore.state().rooms;
+  const state = PGStore.state();
+  const rooms = state.rooms;
   const t = totals();
+  const useFloors = state.settings.floors !== false;
+
+  el("occ-head").textContent = useFloors ? "Occupancy by floor" : "Occupancy by room";
   el("occ-total").textContent = t.beds ? t.occupied + " of " + t.beds + " beds filled" : "";
 
   if (!rooms.length) {
     el("floor-bars").innerHTML = '<p class="muted-sm">Add a room to see occupancy here.</p>';
+    return;
+  }
+
+  if (!useFloors) {
+    el("floor-bars").innerHTML = rooms
+      .map((r) => occBar("Room " + r.no, r.beds.filter(Boolean).length, r.beds.length))
+      .join("");
     return;
   }
 
@@ -186,14 +207,9 @@ function renderFloors() {
 
   el("floor-bars").innerHTML = floors.map((f) => {
     const on = rooms.filter((r) => r.floor === f);
-    const total = on.reduce((s, r) => s + r.beds.length, 0);
-    const filled = on.reduce((s, r) => s + r.beds.filter(Boolean).length, 0);
-    const pct = total ? Math.round((filled / total) * 100) : 0;
-    return `
-    <div>
-      <div class="bar-row-top"><span>Floor ${f}</span><b>${filled}/${total} · ${pct}%</b></div>
-      <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
-    </div>`;
+    const total = on.reduce((sum, r) => sum + r.beds.length, 0);
+    const filled = on.reduce((sum, r) => sum + r.beds.filter(Boolean).length, 0);
+    return occBar("Floor " + f, filled, total);
   }).join("");
 }
 
@@ -232,7 +248,7 @@ function renderRooms() {
     const filled = room.beds.filter(Boolean).length;
 
     const beds = room.beds.map((bed, i) => {
-      const label = PGStore.bedLabel(i);
+      const label = PGStore.bedLabel(i, room.id);
       if (!bed) {
         return `<button class="bed bed-add" type="button" data-act="fill-bed" data-room="${esc(room.id)}" data-bed="${i}">
           <b>Bed ${label}</b><span>+ Add tenant</span>
@@ -403,6 +419,169 @@ function renderExpenses() {
   }).join("");
 }
 
+/* ---------- owner tab ---------- */
+
+const SETTINGS_ROWS = [
+  {
+    key: "floors",
+    title: "Floors",
+    note: "Turn this off for a single-storey PG. Rooms stop asking for a floor, and the overview counts by room instead.",
+    opts: [{ v: true, label: "Use floors" }, { v: false, label: "No floors" }]
+  },
+  {
+    key: "bedStyle",
+    title: "Bed labels",
+    note: "How every bed is named \u2014 on the bed tiles, in the rent list and on each tenant profile.",
+    opts: [{ v: "alpha", label: "Letters" }, { v: "number", label: "Numbers" }]
+  },
+  {
+    key: "bedNumbering",
+    title: "Beds in a new room",
+    note: "Start every room again from the first label, or carry on counting from the room before it.",
+    opts: [{ v: "restart", label: "Start again" }, { v: "continue", label: "Carry on" }]
+  }
+];
+
+function ownerName() {
+  const o = PGStore.state().owner || {};
+  return o.name || (window.PG_SESSION && PG_SESSION.name) || "Owner";
+}
+
+function renderOwner() {
+  const s = PGStore.state();
+  const o = s.owner || {};
+  const t = totals();
+  const tel = String(o.phone || "").replace(/[^0-9+]/g, "");
+  const name = ownerName();
+
+  el("owner-card").innerHTML = `
+    <div class="own-top">
+      <span class="av own-av">${esc(initials(name))}</span>
+      <span class="own-id">
+        <b>${esc(name)}</b>
+        <span>${esc(s.property || "Property not named yet")}</span>
+      </span>
+    </div>
+    <div class="own-grid">
+      <div class="own-cell"><b>Phone</b><span>${
+        tel ? `<a href="tel:${esc(tel)}">${esc(o.phone)}</a>` : "<i>Not added yet</i>"
+      }</span></div>
+      <div class="own-cell"><b>Address</b><span>${
+        o.address ? esc(o.address) : "<i>Not added yet</i>"
+      }</span></div>
+      <div class="own-cell"><b>Property</b><span>${t.rooms} ${t.rooms === 1 ? "room" : "rooms"} · ${t.beds} beds · ${t.occupied} filled</span></div>
+      <div class="own-cell"><b>Rent this month</b><span>${money(t.collected)} of ${money(t.expected)}</span></div>
+    </div>`;
+
+  /* The greeting and the avatar follow whatever name the owner saved. */
+  el("greet").textContent = greeting() + ", " + String(name).split(" ")[0];
+  el("avatar").textContent = initials(name);
+  el("avatar").title = name;
+}
+
+/* Shows the labels the current choices actually produce, using real rooms. */
+function bedPreview() {
+  const rooms = PGStore.state().rooms;
+  if (!rooms.length) { return "Add a room and the labels will preview here."; }
+
+  const a = rooms[0];
+  const first = a.beds.map((bed, i) => PGStore.bedLabel(i, a.id)).join(", ");
+  if (rooms.length < 2) { return "Beds read " + first + " in room " + a.no + "."; }
+
+  const b = rooms[1];
+  return "Beds read " + first + " in room " + a.no +
+    ", then " + PGStore.bedLabel(0, b.id) + " in room " + b.no + ".";
+}
+
+function renderSettings() {
+  const s = PGStore.state().settings;
+
+  el("settings-list").innerHTML = SETTINGS_ROWS.map((row) => {
+    const opts = row.opts.map((o) => {
+      const on = o.v === s[row.key];
+      return `<button class="seg${on ? " is-on" : ""}" type="button" aria-pressed="${on}" data-act="set-opt" data-key="${row.key}" data-val="${String(o.v)}">${o.label}</button>`;
+    }).join("");
+
+    return `
+      <div class="set-row">
+        <div class="set-text"><b>${row.title}</b><span>${row.note}</span></div>
+        <div class="seg-group">${opts}</div>
+      </div>`;
+  }).join("");
+
+  el("set-preview").textContent = bedPreview();
+}
+
+/* The rents your rooms are actually set to, so the card can be sanity-checked. */
+function roomRates() {
+  const map = {};
+  PGStore.state().rooms.forEach((r) => {
+    const k = String(r.rent);
+    if (!map[k]) { map[k] = { amount: r.rent, beds: 0, rooms: [] }; }
+    map[k].beds += r.beds.length;
+    map[k].rooms.push(r.no);
+  });
+  return Object.keys(map).map((k) => map[k]).sort((a, b) => b.amount - a.amount);
+}
+
+function rateRow(label, sub, amount) {
+  return `
+    <div class="rc-row">
+      <div><b>${esc(label)}</b><span>${esc(sub)}</span></div>
+      <span class="rc-amt">${money(amount)}</span>
+    </div>`;
+}
+
+function renderRates() {
+  const rates = PGStore.state().rates;
+
+  el("rate-list").innerHTML = rates.length
+    ? rates.map((r) => `
+      <div class="rc-row">
+        <div><b>${esc(r.label)}</b><span>${esc(r.note || "per bed, per month")}</span></div>
+        <span class="pay-right">
+          <span class="rc-amt">${money(r.amount)}</span>
+          <button class="link-btn link-danger" type="button" data-act="del-rate" data-rate="${esc(r.id)}">Remove</button>
+        </span>
+      </div>`).join("")
+    : '<p class="rate-blank">Nothing on the card yet. Add what you charge for a single, a two sharing, an AC room \u2014 then you can pull it up in front of anyone who asks.</p>';
+}
+
+function openRateCard() {
+  const rates = PGStore.state().rates;
+  const rooms = roomRates();
+
+  const mine = '<div class="rc-sec"><h4>What you charge</h4>' + (rates.length
+    ? rates.map((r) => rateRow(r.label, r.note || "per bed, per month", r.amount)).join("")
+    : '<p class="rate-blank">No rates added yet.</p>') + "</div>";
+
+  const actual = rooms.length
+    ? '<div class="rc-sec"><h4>What your rooms are set to</h4>' +
+      rooms.map((d) => rateRow(
+        d.beds + (d.beds === 1 ? " bed" : " beds"),
+        "Room " + d.rooms.join(", "),
+        d.amount
+      )).join("") + "</div>"
+    : "";
+
+  el("rates-body").innerHTML = mine + actual;
+  openDlg("dlg-rates");
+}
+
+function openOwnerDialog() {
+  const o = PGStore.state().owner || {};
+  el("o-name").value = o.name || (window.PG_SESSION && PG_SESSION.name) || "";
+  el("o-phone").value = o.phone || "";
+  el("o-address").value = o.address || "";
+  openDlg("dlg-owner");
+}
+
+/* A PG with floors switched off should never be asked for one. */
+function applyFloorSetting() {
+  const field = el("r-floor-field");
+  if (field) { field.hidden = PGStore.state().settings.floors === false; }
+}
+
 function renderAll() {
   const s = PGStore.state();
   el("brand-prop").textContent = s.property || "Name your property";
@@ -414,6 +593,10 @@ function renderAll() {
   renderTenants();
   renderRent();
   renderExpenses();
+  renderOwner();
+  renderSettings();
+  renderRates();
+  applyFloorSetting();
 }
 
 /* ---------- backup ---------- */
@@ -551,6 +734,25 @@ document.addEventListener("click", (e) => {
         alert(err && err.message ? err.message : "Could not restore from the sheet.");
       });
     }
+  } else if (act === "rate-card") {
+    openRateCard();
+  } else if (act === "add-rate") {
+    closeDlg("dlg-rates");
+    el("ra-label").value = "";
+    el("ra-amt").value = "";
+    el("ra-note").value = "";
+    openDlg("dlg-rate");
+  } else if (act === "del-rate") {
+    PGStore.removeRate(btn.dataset.rate);
+    commit();
+  } else if (act === "edit-owner") {
+    openOwnerDialog();
+  } else if (act === "set-opt") {
+    const raw = btn.dataset.val;
+    const patch = {};
+    patch[btn.dataset.key] = raw === "true" ? true : raw === "false" ? false : raw;
+    PGStore.setSettings(patch);
+    commit();
   } else if (act === "close") {
     closeDlg(btn.dataset.dlg);
   }
@@ -560,7 +762,7 @@ el("form-room").addEventListener("submit", (e) => {
   e.preventDefault();
   const res = PGStore.addRoom({
     no: el("r-no").value,
-    floor: el("r-floor").value,
+    floor: PGStore.settings().floors === false ? 0 : el("r-floor").value,
     beds: el("r-beds").value,
     rent: el("r-rent").value
   });
@@ -594,6 +796,30 @@ el("form-expense").addEventListener("submit", (e) => {
   });
   if (!res.ok) { showErr("x-err", res.error); return; }
   closeDlg("dlg-expense");
+  commit();
+});
+
+el("form-rate").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const res = PGStore.addRate({
+    label: el("ra-label").value,
+    amount: el("ra-amt").value,
+    note: el("ra-note").value
+  });
+  if (!res.ok) { showErr("ra-err", res.error); return; }
+  closeDlg("dlg-rate");
+  commit();
+});
+
+el("form-owner").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const res = PGStore.setOwner({
+    name: el("o-name").value,
+    phone: el("o-phone").value,
+    address: el("o-address").value
+  });
+  if (!res.ok) { showErr("o-err", res.error); return; }
+  closeDlg("dlg-owner");
   commit();
 });
 
@@ -632,6 +858,7 @@ function boot(session) {
   const name = (session && session.name) || "Owner";
   const accountId = (session && session.id) || "local";
   PGStore.use(accountId);
+  window.PG_SESSION = { name: name, id: accountId };
 
   if (window.PGSheets) {
     PGSheets.use(accountId);
