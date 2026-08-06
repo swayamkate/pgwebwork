@@ -239,7 +239,9 @@ function renderRooms() {
         </button>`;
       }
       const cls = bed.onNotice ? "bed bed-notice" : "bed bed-occupied";
-      return `<div class="${cls}"><b>Bed ${label}</b><span>${esc(bed.name)}</span></div>`;
+      return `<button class="${cls}" type="button" data-act="profile" data-room="${esc(room.id)}" data-bed="${i}">
+        <b>Bed ${label}</b><span>${esc(bed.name)}</span>
+      </button>`;
     }).join("");
 
     return `
@@ -282,12 +284,13 @@ function renderTenants() {
   blank.innerHTML = "";
 
   const actions = (t) => `
+    <button class="link-btn" type="button" data-act="profile" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">Profile</button>
     <button class="link-btn" type="button" data-act="notice" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">${t.onNotice ? "Cancel notice" : "On notice"}</button>
     <button class="link-btn link-danger" type="button" data-act="checkout" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">Check out</button>`;
 
   el("tenant-rows").innerHTML = list.map((t) => `
     <tr>
-      <td><span class="who"><span class="av">${esc(initials(t.name))}</span>${esc(t.name)}${t.onNotice ? ' <span class="tag-notice">notice</span>' : ""}</span></td>
+      <td><button class="who who-btn" type="button" data-act="profile" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}"><span class="av">${esc(initials(t.name))}</span><span class="who-name">${esc(t.name)}</span>${t.onNotice ? ' <span class="tag-notice">notice</span>' : ""}</button></td>
       <td class="mono">${esc(t.roomNo)} · ${t.bed}</td>
       <td class="mono">${esc(t.phone) || "\u2014"}</td>
       <td>${prettyDate(t.joined)}</td>
@@ -299,7 +302,7 @@ function renderTenants() {
   el("tenant-cards").innerHTML = list.map((t) => `
     <div class="tcard">
       <div class="tcard-top">
-        <span class="who"><span class="av">${esc(initials(t.name))}</span>${esc(t.name)}</span>
+        <button class="who who-btn" type="button" data-act="profile" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}"><span class="av">${esc(initials(t.name))}</span><span class="who-name">${esc(t.name)}</span></button>
         <span class="badge badge-${t.status}">${BADGE[t.status]}</span>
       </div>
       <div class="tcard-grid">
@@ -572,7 +575,9 @@ el("form-tenant").addEventListener("submit", (e) => {
   const res = PGStore.addTenant(picked[0], picked[1], {
     name: el("t-name").value,
     phone: el("t-phone").value,
-    joined: el("t-joined").value
+    joined: el("t-joined").value,
+    leaving: el("t-leaving").value,
+    note: el("t-note").value
   });
   if (!res.ok) { showErr("t-err", res.error); return; }
   closeDlg("dlg-tenant");
