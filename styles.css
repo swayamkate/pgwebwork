@@ -403,3 +403,27 @@ h2{font-size:16.5px;letter-spacing:-.018em;font-weight:650;line-height:1.35;marg
 @media (prefers-reduced-motion:reduce){
   *{transition:none!important;animation:none!important}
 }
+
+/* ---------- auth: password field, strength meter, notices ---------- */
+
+/* .field sets display:flex, which beats the browser's own [hidden] rule, so a
+   hidden field keeps its slot unless it is told to go. */
+.field[hidden]{display:none}
+
+.pw-wrap{position:relative;display:block}
+.pw-wrap input{width:100%;padding-right:44px}
+.pw-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;transition:color .16s ease,background .16s ease}
+.pw-eye:hover{color:var(--text);background:var(--surface-3)}
+.pw-eye:focus-visible{outline:0;box-shadow:0 0 0 3px var(--ring)}
+.pw-eye[aria-pressed="true"]{color:var(--brand)}
+
+.pw-meter{display:flex;align-items:center;gap:10px;margin-top:9px}
+.pw-bar{flex:1;height:5px;border-radius:99px;background:var(--surface-3);overflow:hidden}
+.pw-bar i{display:block;height:100%;width:0;border-radius:99px;background:var(--red);transition:width .22s ease,background .22s ease}
+.pw-label{font-size:12px;font-weight:600;color:var(--muted);min-width:78px;text-align:right}
+.pw-meter[data-score="2"] .pw-bar i{background:var(--amber)}
+.pw-meter[data-score="3"] .pw-bar i,.pw-meter[data-score="4"] .pw-bar i{background:var(--green)}
+
+.code-input{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase}
+
+.auth-note{margin:0 0 16px;padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.5;background:var(--amber-soft);color:var(--amber)}
