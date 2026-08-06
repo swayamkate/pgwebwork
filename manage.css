@@ -85,12 +85,23 @@ button.bed-add:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .dlg .field select:focus{outline:none;background:var(--surface);border-color:var(--brand);box-shadow:0 0 0 4px var(--ring)}
 .dlg-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:6px}
 
-/* backup bar */
+/* backup bar, docked to the bottom of the window so it is visible on every
+   tab. The dock is click-through so the fixed layer never swallows presses
+   meant for the page behind it; the bar itself takes them back. */
+.backup-dock{
+  position:fixed;left:0;right:0;bottom:0;z-index:28;
+  padding-bottom:16px;pointer-events:none;
+}
+.backup-dock .wrap{pointer-events:none}
 .backup{
+  pointer-events:auto;
   display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  margin-top:24px;padding:15px 18px;border:1px solid var(--border);border-radius:14px;
-  background:var(--surface);font-size:13px;color:var(--muted);
-  box-shadow:var(--shadow-sm), var(--hairline);
+  padding:15px 18px;border:1px solid var(--border);border-radius:14px;
+  background:color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter:saturate(180%) blur(12px);
+  -webkit-backdrop-filter:saturate(180%) blur(12px);
+  font-size:13px;color:var(--muted);
+  box-shadow:var(--shadow-lg), var(--hairline);
   transition:border-color .18s ease, color .18s ease;
 }
 .backup-dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
@@ -104,8 +115,16 @@ button.bed-add:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .backup-actions{margin-left:auto;display:flex;gap:14px}
 .backup-actions[hidden]{display:none}
 
+/* The dock floats above the page, so the footer needs room to clear it. */
+.foot{padding-bottom:104px}
+
 @media (max-width:640px){
   .backup-actions{margin-left:0;width:100%}
+
+  /* The actions wrap onto their own line here, so the bar is taller and the
+     footer needs correspondingly more clearance. */
+  .backup-dock{padding-bottom:10px}
+  .foot{padding-bottom:150px}
 
   /* The header runs out of room once the property button is added, so the
      wordmark gives way to the logo on phones. */

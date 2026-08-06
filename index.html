@@ -119,15 +119,6 @@
         <ul class="feed" id="feed"></ul>
       </div>
     </div>
-
-    <div class="backup is-off" id="backup">
-      <span class="backup-dot" aria-hidden="true"></span>
-      <span class="backup-text" id="backup-text">Sheet backup is not set up yet.</span>
-      <span class="backup-actions" id="backup-actions" hidden>
-        <button class="link-btn" type="button" data-act="backup-now">Back up now</button>
-        <button class="link-btn" type="button" data-act="backup-restore">Restore from sheet</button>
-      </span>
-    </div>
   </section>
 
   <!-- BEDS -->
@@ -205,6 +196,21 @@
   </section>
 
 </main>
+
+<!-- Docked to the bottom of the window so the backup state is visible from
+     every tab, not just the overview. -->
+<div class="backup-dock">
+  <div class="wrap">
+    <div class="backup is-off" id="backup">
+      <span class="backup-dot" aria-hidden="true"></span>
+      <span class="backup-text" id="backup-text">Sheet backup is not set up yet.</span>
+      <span class="backup-actions" id="backup-actions" hidden>
+        <button class="link-btn" type="button" data-act="backup-now">Back up now</button>
+        <button class="link-btn" type="button" data-act="backup-restore">Restore from sheet</button>
+      </span>
+    </div>
+  </div>
+</div>
 
 <footer class="foot">
   <div class="wrap foot-in">
