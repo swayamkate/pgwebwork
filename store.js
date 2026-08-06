@@ -14,7 +14,23 @@
   var state = blank();
 
   function blank() {
-    return { property: "", rooms: [], activity: [], expenses: [], cycle: cycleId() };
+    return {
+      property: "",
+      rooms: [],
+      activity: [],
+      expenses: [],
+      rates: [],
+      owner: { name: "", phone: "", address: "" },
+      settings: defaultSettings(),
+      cycle: cycleId()
+    };
+  }
+
+  /* How this PG is laid out. These are the owner's choices, so the defaults
+     match the commonest setup: a building with floors, and beds lettered
+     A, B, C starting again inside every room. */
+  function defaultSettings() {
+    return { floors: true, bedStyle: "alpha", bedNumbering: "restart" };
   }
 
   function cycleId() {
@@ -38,6 +54,11 @@
     });
   }
 
+  /* Dearest first, so the rate card reads like a price list. */
+  function sortRates(list) {
+    list.sort(function (a, b) { return b.amount - a.amount; });
+  }
+
   function uid() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   }
@@ -53,6 +74,38 @@
 
     out.property = typeof raw.property === "string" ? raw.property : "";
     out.cycle = typeof raw.cycle === "string" ? raw.cycle : cycleId();
+
+    /* Backups written before settings existed simply have none, which is
+       normal rather than corrupt, so the defaults above stand. */
+    if (raw.settings && typeof raw.settings === "object") {
+      out.settings.floors = raw.settings.floors !== false;
+      if (raw.settings.bedStyle === "number") { out.settings.bedStyle = "number"; }
+      if (raw.settings.bedNumbering === "continue") { out.settings.bedNumbering = "continue"; }
+    }
+
+    if (raw.owner && typeof raw.owner === "object") {
+      out.owner = {
+        name: clean(raw.owner.name, 60),
+        phone: clean(raw.owner.phone, 24),
+        address: clean(raw.owner.address, 120)
+      };
+    }
+
+    if (isArray(raw.rates)) {
+      out.rates = raw.rates.filter(function (r) {
+        return r && typeof r === "object";
+      }).map(function (r) {
+        return {
+          id: r.id || uid(),
+          label: clean(r.label, 40),
+          amount: Math.max(0, Number(r.amount) || 0),
+          note: clean(r.note, 60)
+        };
+      }).filter(function (r) {
+        return r.label && r.amount > 0;
+      }).slice(0, 30);
+      sortRates(out.rates);
+    }
 
     if (isArray(raw.rooms)) {
       out.rooms = raw.rooms.filter(function (r) {
@@ -156,8 +209,35 @@
     return null;
   }
 
-  function bedLabel(index) {
-    return "ABCDEFGH".charAt(index) || String(index + 1);
+  /* A, B, C … Z, then AA, AB — so a long corridor never runs out of letters. */
+  function alphaLabel(n) {
+    var out = "";
+    n = Math.max(0, Number(n) || 0);
+    do {
+      out = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".charAt(n % 26) + out;
+      n = Math.floor(n / 26) - 1;
+    } while (n >= 0);
+    return out;
+  }
+
+  /* How many beds sit before this room, for owners who number straight
+     through the property instead of starting again in every room. */
+  function bedOffset(roomId) {
+    var total = 0;
+    for (var i = 0; i < state.rooms.length; i++) {
+      if (state.rooms[i].id === roomId) { return total; }
+      total += state.rooms[i].beds.length;
+    }
+    return 0;
+  }
+
+  /* Pass the room id whenever you have it. Without one this falls back to
+     labelling the bed on its own, which is right for a picker row. */
+  function bedLabel(index, roomId) {
+    var s = state.settings || {};
+    var n = Math.max(0, Number(index) || 0);
+    if (roomId && s.bedNumbering === "continue") { n += bedOffset(roomId); }
+    return s.bedStyle === "number" ? String(n + 1) : alphaLabel(n);
   }
 
   var PGStore = {
@@ -243,7 +323,7 @@
         paid: false
       };
 
-      log("in", name + " checked in", "Room " + target.no + " · Bed " + bedLabel(i));
+      log("in", name + " checked in", "Room " + target.no + " · Bed " + bedLabel(i, target.id));
       save();
       return { ok: true };
     },
@@ -268,7 +348,7 @@
 
       log("in",
         before === name ? name + "'s details updated" : before + " is now " + name,
-        "Room " + target.no + " \u00b7 Bed " + bedLabel(i));
+        "Room " + target.no + " \u00b7 Bed " + bedLabel(i, target.id));
       save();
       return { ok: true };
     },
@@ -280,7 +360,7 @@
       if (!bed) { return { ok: false, error: "That bed is already empty." }; }
 
       target.beds[bedIndex] = null;
-      log("out", bed.name + " checked out", "Room " + target.no + " · Bed " + bedLabel(Number(bedIndex)));
+      log("out", bed.name + " checked out", "Room " + target.no + " · Bed " + bedLabel(Number(bedIndex), target.id));
       save();
       return { ok: true };
     },
@@ -292,7 +372,7 @@
 
       bed.onNotice = !bed.onNotice;
       log("out", bed.name + (bed.onNotice ? " is on notice" : " cancelled notice"),
-        "Room " + target.no + " · Bed " + bedLabel(Number(bedIndex)));
+        "Room " + target.no + " · Bed " + bedLabel(Number(bedIndex), target.id));
       save();
       return { ok: true };
     },
@@ -317,7 +397,7 @@
       state.rooms.forEach(function (r) {
         r.beds.forEach(function (bed, i) {
           if (!bed) {
-            out.push({ roomId: r.id, roomNo: r.no, bedIndex: i, bed: bedLabel(i), rent: r.rent });
+            out.push({ roomId: r.id, roomNo: r.no, bedIndex: i, bed: bedLabel(i, r.id), rent: r.rent });
           }
         });
       });
@@ -357,6 +437,72 @@
 
       log("in", "Expense removed",
         gone.category + " \u00b7 \u20b9" + gone.amount.toLocaleString("en-IN"));
+      save();
+      return { ok: true };
+    },
+
+    /* ---------- owner, settings and the rate card ---------- */
+
+    settings: function () { return state.settings; },
+
+    /* Only the keys present in the patch change, so a single control can be
+       flipped without the caller having to know the rest. */
+    setSettings: function (patch) {
+      var s = state.settings;
+      if (!patch || typeof patch !== "object") { return { ok: false, error: "Nothing to change." }; }
+      if (patch.floors != null) { s.floors = !!patch.floors; }
+      if (patch.bedStyle === "alpha" || patch.bedStyle === "number") { s.bedStyle = patch.bedStyle; }
+      if (patch.bedNumbering === "restart" || patch.bedNumbering === "continue") {
+        s.bedNumbering = patch.bedNumbering;
+      }
+      save();
+      return { ok: true };
+    },
+
+    setOwner: function (data) {
+      var name = clean(data.name, 60);
+      if (!name) { return { ok: false, error: "Enter your name." }; }
+
+      state.owner = {
+        name: name,
+        phone: clean(data.phone, 24),
+        address: clean(data.address, 120)
+      };
+      log("in", "Owner details updated", name);
+      save();
+      return { ok: true };
+    },
+
+    addRate: function (data) {
+      var label = clean(data.label, 40);
+      var amount = Math.max(0, Number(data.amount) || 0);
+
+      if (!label) { return { ok: false, error: "Name the rate, like \u201c2 sharing\u201d." }; }
+      if (!(amount > 0)) { return { ok: false, error: "Enter an amount above zero." }; }
+      if (state.rates.length >= 30) { return { ok: false, error: "That is as many rates as one card holds." }; }
+
+      state.rates.push({
+        id: uid(),
+        label: label,
+        amount: amount,
+        note: clean(data.note, 60)
+      });
+      sortRates(state.rates);
+
+      log("in", "Rate added: " + label, "\u20b9" + amount.toLocaleString("en-IN") + " per bed");
+      save();
+      return { ok: true };
+    },
+
+    removeRate: function (id) {
+      var gone = null;
+      state.rates = state.rates.filter(function (r) {
+        if (r.id === id) { gone = r; return false; }
+        return true;
+      });
+      if (!gone) { return { ok: false, error: "That rate is gone already." }; }
+
+      log("out", "Rate removed: " + gone.label, "");
       save();
       return { ok: true };
     },

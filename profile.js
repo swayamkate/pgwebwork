@@ -116,8 +116,16 @@
     return null;
   }
 
-  function bedLabel(i) {
-    return global.PGStore ? PGStore.bedLabel(i) : String(i + 1);
+  function bedLabel(i, roomId) {
+    return global.PGStore ? PGStore.bedLabel(i, roomId) : String(i + 1);
+  }
+
+  /* Owners of a single-storey PG switch floors off, and then a floor line
+     under the room number is just noise. */
+  function floorSub(room) {
+    var s = global.PGStore && PGStore.settings ? PGStore.settings() : null;
+    if (s && s.floors === false) { return ""; }
+    return "Floor " + (Number(room.floor) || 0);
   }
 
   function dialog() {
@@ -159,14 +167,14 @@
         '<span class="pf-id">' +
           '<b>' + esc(bed.name) +
             (bed.onNotice ? ' <span class="tag-notice">notice</span>' : "") + '</b>' +
-          '<span>Room ' + esc(room.no) + ' \u00b7 Bed ' + esc(bedLabel(current.bedIndex)) + '</span>' +
+          '<span>Room ' + esc(room.no) + ' \u00b7 Bed ' + esc(bedLabel(current.bedIndex, current.roomId)) + '</span>' +
         '</span>' +
         '<span class="badge badge-' + st + '">' + LABEL[st] + '</span>' +
       '</div>' +
 
       '<div class="pf-grid">' +
-        cell("Room", "Room " + esc(room.no), "Floor " + (Number(room.floor) || 0)) +
-        cell("Bed number", "Bed " + esc(bedLabel(current.bedIndex)), "") +
+        cell("Room", "Room " + esc(room.no), floorSub(room)) +
+        cell("Bed number", "Bed " + esc(bedLabel(current.bedIndex, current.roomId)), "") +
         cell("Phone", tel ? '<a href="tel:' + esc(tel) + '">' + esc(phone) + '</a>' : "\u2014", "") +
         cell("Rent", money(room.rent), "per month") +
         cell("Joining date", pretty(bed.joined), stayLabel(bed.joined)) +
