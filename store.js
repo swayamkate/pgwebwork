@@ -69,6 +69,8 @@
               name: clean(b.name, 60),
               phone: clean(b.phone, 24),
               joined: clean(b.joined, 24),
+              leaving: clean(b.leaving, 24),
+              note: clean(b.note, 200),
               onNotice: !!b.onNotice,
               paid: !!b.paid
             };
@@ -235,11 +237,38 @@
         name: name,
         phone: clean(data.phone, 24),
         joined: clean(data.joined, 24) || new Date().toISOString().slice(0, 10),
+        leaving: clean(data.leaving, 24),
+        note: clean(data.note, 200),
         onNotice: false,
         paid: false
       };
 
       log("in", name + " checked in", "Room " + target.no + " · Bed " + bedLabel(i));
+      save();
+      return { ok: true };
+    },
+
+    /* Edit someone already in a bed. The bed itself never moves here, so rent
+       and payment state are left exactly as they were. */
+    updateTenant: function (roomId, bedIndex, data) {
+      var target = room(roomId);
+      var i = Number(bedIndex);
+      var bed = target && target.beds[i];
+      if (!bed) { return { ok: false, error: "That bed is empty." }; }
+
+      var name = clean(data.name, 60);
+      if (!name) { return { ok: false, error: "Enter the tenant's name." }; }
+
+      var before = bed.name;
+      bed.name = name;
+      bed.phone = clean(data.phone, 24);
+      bed.joined = clean(data.joined, 24);
+      bed.leaving = clean(data.leaving, 24);
+      bed.note = clean(data.note, 200);
+
+      log("in",
+        before === name ? name + "'s details updated" : before + " is now " + name,
+        "Room " + target.no + " \u00b7 Bed " + bedLabel(i));
       save();
       return { ok: true };
     },
