@@ -318,7 +318,7 @@
     if (/[^A-Za-z0-9]/.test(p)) { classes += 1; }
     /* A long passphrase is strong without punctuation, so length buys a pass. */
     if (classes < 3 && p.length < 16) {
-      return "Mix upper case, lower case and numbers \\u2014 or make it 16 characters long.";
+      return "Mix upper case, lower case and numbers \u2014 or make it 16 characters long.";
     }
 
     var ctx = String((context && context.email) || "").split("@")[0];
