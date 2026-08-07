@@ -180,6 +180,8 @@
         cell("Joining date", pretty(bed.joined), stayLabel(bed.joined)) +
         cell("Leaving date", bed.leaving ? pretty(bed.leaving) : "\u2014",
           leaveLabel(bed.leaving) || (bed.onNotice ? "on notice, no date set" : "no date set")) +
+        cell("Collection day", bed.collect ? "Day " + bed.collect : "\u2014",
+          bed.collect ? "of every month" : "not set") +
       '</div>' +
 
       '<div class="pf-note"><b>Note</b>' +
@@ -215,8 +217,10 @@
             '" placeholder="+91 98765 43210" /></label>' +
           '<label class="field"><span>Joining date</span>' +
             '<input id="pf-joined" type="date" value="' + esc(dateValue(bed.joined)) + '" /></label>' +
-          '<label class="field span-2"><span>Leaving date</span>' +
+          '<label class="field"><span>Leaving date</span>' +
             '<input id="pf-leaving" type="date" value="' + esc(dateValue(bed.leaving)) + '" /></label>' +
+          '<label class="field"><span>Collection day</span>' +
+            '<input id="pf-collect" type="number" min="1" max="31" value="' + esc(bed.collect || "") + '" placeholder="e.g. 5" /></label>' +
           '<label class="field span-2"><span>Note</span>' +
             '<textarea id="pf-note" maxlength="200" rows="3" ' +
             'placeholder="Deposit paid, food preference, parent\u2019s number\u2026">' +
@@ -282,6 +286,7 @@
       phone: val("pf-phone"),
       joined: val("pf-joined"),
       leaving: val("pf-leaving"),
+      collect: val("pf-collect"),
       note: val("pf-note")
     });
 
