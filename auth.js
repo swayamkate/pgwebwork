@@ -318,7 +318,7 @@
     if (/[^A-Za-z0-9]/.test(p)) { classes += 1; }
     /* A long passphrase is strong without punctuation, so length buys a pass. */
     if (classes < 3 && p.length < 16) {
-      return "Mix upper case, lower case and numbers \u2014 or make it 16 characters long.";
+      return "Mix upper case, lower case and numbers \\u2014 or make it 16 characters long.";
     }
 
     var ctx = String((context && context.email) || "").split("@")[0];
@@ -447,6 +447,36 @@
     return "Owner";
   }
 
+  /* The shape rules a username must pass in either mode. Whether it is also
+     free is answered differently: locally by the stored list, on Supabase by
+     the unique index in supabase/schema.sql. */
+  function shapeProblem(username) {
+    var u = String(username || "").trim().toLowerCase();
+    if (!u) { return "Pick a username."; }
+    if (!USER_RE.test(u)) {
+      return "3 to 20 characters, using letters, numbers, dot, dash or underscore.";
+    }
+    if (RESERVED.indexOf(u) !== -1) { return "That username is reserved."; }
+    if (EMAIL_RE.test(u)) { return "A username cannot be an email address."; }
+    return null;
+  }
+
+  /* Turn a Postgres complaint into something an owner can act on. */
+  function profileError(err) {
+    var code = err && err.code ? String(err.code) : "";
+    var text = err && err.message ? String(err.message) : "";
+    if (code === "23505" || text.indexOf("duplicate key") !== -1) {
+      return "That username is taken.";
+    }
+    if (code === "23514" || text.indexOf("profiles_username_shape") !== -1) {
+      return "3 to 20 characters, using letters, numbers, dot, dash or underscore.";
+    }
+    if (code === "42P01" || text.indexOf("does not exist") !== -1) {
+      return "Usernames need one more step: run supabase/schema.sql in the SQL editor.";
+    }
+    return text || "Could not save the username.";
+  }
+
   function fail(message) { return { ok: false, error: message }; }
 
   /* ---------- api ---------- */
@@ -471,12 +501,13 @@
 
     usernameProblem: function (username, selfId) {
       var u = String(username || "").trim().toLowerCase();
-      if (!u) { return "Pick a username."; }
-      if (!USER_RE.test(u)) {
-        return "3 to 20 characters, using letters, numbers, dot, dash or underscore.";
-      }
-      if (RESERVED.indexOf(u) !== -1) { return "That username is reserved."; }
-      if (EMAIL_RE.test(u)) { return "A username cannot be an email address."; }
+      var problem = shapeProblem(u);
+      if (problem) { return problem; }
+
+      /* On Supabase the local list is empty and the unique index decides, so
+         there is nothing useful to answer here without a round trip. */
+      if (client) { return null; }
+
       var taken = findByUsername(loadDb(), u);
       if (taken && taken.id !== selfId) { return "That username is taken."; }
       return null;
@@ -664,10 +695,28 @@
       var u = String(username || "").trim().toLowerCase();
 
       if (client) {
-        return client.auth.updateUser({ data: { username: u } }).then(function (res) {
-          if (res.error) { return fail(res.error.message); }
-          return { ok: true, username: u };
-        }, function () { return fail("Could not save the username."); });
+        var problem = shapeProblem(u);
+        if (problem) { return Promise.resolve(fail(problem)); }
+
+        return client.auth.getUser().then(function (who) {
+          var me = who && who.data ? who.data.user : null;
+          if (!me) { return fail("Sign in first."); }
+
+          /* The table is the source of truth. If someone else already holds
+             this name the unique index rejects the write, which is the only
+             answer that cannot be raced or faked from the browser. */
+          return client.from("profiles")
+            .upsert({ id: me.id, username: u }, { onConflict: "id" })
+            .then(function (res) {
+              if (res && res.error) { return fail(profileError(res.error)); }
+
+              /* Mirror it onto the account so the session can show it without
+                 a second query. The table still decides who owns it. */
+              function done() { return { ok: true, username: u }; }
+              return client.auth.updateUser({ data: { username: u } })
+                .then(done, done);
+            });
+        }).catch(function () { return fail("Could not save the username."); });
       }
 
       return ready.then(function () {
@@ -695,10 +744,27 @@
       var nxt = String(next == null ? "" : next);
 
       if (client) {
-        return client.auth.updateUser({ password: nxt }).then(function (res) {
-          if (res.error) { return fail(res.error.message); }
-          return { ok: true };
-        }, function () { return fail("Could not change the password."); });
+        var weak = passwordProblem(nxt, {});
+        if (weak) { return Promise.resolve(fail(weak)); }
+        if (cur === nxt) { return Promise.resolve(fail("That is the password you already have.")); }
+
+        /* Supabase happily lets any live session set a new password without
+           proving the old one. Somebody who finds an unlocked screen should
+           not be able to walk off with the account, so the current password
+           is checked before the new one is accepted. */
+        return client.auth.getUser().then(function (who) {
+          var mail = who && who.data && who.data.user ? who.data.user.email : "";
+          if (!mail) { return fail("Sign in first."); }
+
+          return client.auth.signInWithPassword({ email: mail, password: cur })
+            .then(function (check) {
+              if (check.error) { return fail("That is not your current password."); }
+              return client.auth.updateUser({ password: nxt }).then(function (res) {
+                if (res.error) { return fail(res.error.message); }
+                return { ok: true };
+              });
+            });
+        }).catch(function () { return fail("Could not change the password."); });
       }
 
       var blocked = needCrypto();
