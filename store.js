@@ -480,7 +480,7 @@
 
       log("in",
         before === name ? name + "'s details updated" : before + " is now " + name,
-        "Room " + target.no + " \\u00b7 Bed " + bedLabel(i, target.id));
+        "Room " + target.no + " \u00b7 Bed " + bedLabel(i, target.id));
       save();
       return { ok: true };
     },
@@ -567,8 +567,8 @@
       });
 
       if (wasRent !== rent) {
-        log("in", "Room " + no + " rent is now \\u20b9" + rent.toLocaleString("en-IN"),
-          "was \\u20b9" + Number(wasRent || 0).toLocaleString("en-IN") + " per bed");
+        log("in", "Room " + no + " rent is now \u20b9" + rent.toLocaleString("en-IN"),
+          "was \u20b9" + Number(wasRent || 0).toLocaleString("en-IN") + " per bed");
       } else {
         log("in", wasNo === no ? "Room " + no + " updated" : "Room " + wasNo + " is now " + no, "");
       }
@@ -637,7 +637,7 @@
       if (changed) {
         log("pay",
           changed + (changed === 1 ? " month" : " months") + " settled for " + bed.name,
-          "Room " + target.no + " \\u00b7 \\u20b9" + (changed * Number(target.rent || 0)).toLocaleString("en-IN"));
+          "Room " + target.no + " \u00b7 \u20b9" + (changed * Number(target.rent || 0)).toLocaleString("en-IN"));
         save();
       }
 
@@ -722,7 +722,7 @@
       state.expenses.push(entry);
       sortExpenses(state.expenses);
 
-      log("out", category + " expense of \\u20b9" + amount.toLocaleString("en-IN"), entry.note || "");
+      log("out", category + " expense of \u20b9" + amount.toLocaleString("en-IN"), entry.note || "");
       save();
       return { ok: true };
     },
@@ -736,7 +736,7 @@
       if (!gone) { return { ok: false, error: "That expense is gone already." }; }
 
       log("in", "Expense removed",
-        gone.category + " \\u00b7 \\u20b9" + gone.amount.toLocaleString("en-IN"));
+        gone.category + " \u00b7 \u20b9" + gone.amount.toLocaleString("en-IN"));
       save();
       return { ok: true };
     },
@@ -777,7 +777,7 @@
       var label = clean(data.label, 40);
       var amount = Math.max(0, Number(data.amount) || 0);
 
-      if (!label) { return { ok: false, error: "Name the rate, like \\u201c2 sharing\\u201d." }; }
+      if (!label) { return { ok: false, error: "Name the rate, like \u201c2 sharing\u201d." }; }
       if (!(amount > 0)) { return { ok: false, error: "Enter an amount above zero." }; }
       if (state.rates.length >= 30) { return { ok: false, error: "That is as many rates as one card holds." }; }
 
@@ -789,7 +789,7 @@
       });
       sortRates(state.rates);
 
-      log("in", "Rate added: " + label, "\\u20b9" + amount.toLocaleString("en-IN") + " per bed");
+      log("in", "Rate added: " + label, "\u20b9" + amount.toLocaleString("en-IN") + " per bed");
       save();
       return { ok: true };
     },
