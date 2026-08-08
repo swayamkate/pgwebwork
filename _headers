@@ -1,0 +1,17 @@
+# Cloudflare Pages: the dashboard is a set of plain files with no build step,
+# so a cached copy of one script can leave the site running a mix of old and
+# new code. "no-cache" does not mean "never store" — the browser may keep the
+# file, but it must check with the server before reusing it, so a push shows up
+# on the next load instead of whenever the cache happens to expire.
+
+/*.js
+  Cache-Control: no-cache, must-revalidate
+
+/*.css
+  Cache-Control: no-cache, must-revalidate
+
+/*.html
+  Cache-Control: no-cache, must-revalidate
+
+/
+  Cache-Control: no-cache, must-revalidate
