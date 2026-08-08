@@ -205,6 +205,7 @@
 
   function editView(found) {
     var bed = found.bed;
+    var room = found.room;
 
     return '' +
       '<form class="pf-form" id="pf-form">' +
@@ -221,6 +222,10 @@
             '<input id="pf-leaving" type="date" value="' + esc(dateValue(bed.leaving)) + '" /></label>' +
           '<label class="field"><span>Collection day</span>' +
             '<input id="pf-collect" type="number" min="1" max="31" value="' + esc(bed.collect || "") + '" placeholder="e.g. 5" /></label>' +
+          '<label class="field"><span>Rent per month (\u20b9)</span>' +
+            '<input id="pf-rent" type="number" min="0" step="100" value="' + esc(room.rent) + '" /></label>' +
+          '<p class="hint span-2">Rent belongs to Room ' + esc(room.no) +
+            ', so a change here applies to every bed in that room. Months already marked paid keep the rent they were paid at.</p>' +
           '<label class="field span-2"><span>Note</span>' +
             '<textarea id="pf-note" maxlength="200" rows="3" ' +
             'placeholder="Deposit paid, food preference, parent\u2019s number\u2026">' +
@@ -274,7 +279,8 @@
   }
 
   function save() {
-    if (!find(current)) { close(); return; }
+    var found = find(current);
+    if (!found) { close(); return; }
 
     var val = function (id) {
       var node = document.getElementById(id);
@@ -294,6 +300,18 @@
       error = res.error || "Could not save those changes.";
       render();
       return;
+    }
+
+    /* Rent is a property of the room, not the bed, so it saves through a
+       second call. An empty box means "leave it alone". */
+    var rent = val("pf-rent");
+    if (String(rent).trim() !== "" && Number(rent) !== Number(found.room.rent)) {
+      var priced = PGStore.updateRoom(current.roomId, { rent: rent });
+      if (!priced.ok) {
+        error = priced.error || "Could not save that rent.";
+        render();
+        return;
+      }
     }
 
     error = "";
