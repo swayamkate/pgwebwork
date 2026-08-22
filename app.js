@@ -54,6 +54,13 @@ function tenants() {
         name: bed.name,
         phone: bed.phone,
         joined: bed.joined,
+        leaving: bed.leaving,
+        note: bed.note,
+        deposit: bed.deposit || 0,
+        idType: bed.idType || "",
+        idNumber: bed.idNumber || "",
+        emergencyContact: bed.emergencyContact || "",
+        workplace: bed.workplace || "",
         onNotice: bed.onNotice,
         paid: bed.paid,
         status: bedStatus(bed),
@@ -303,6 +310,10 @@ function renderTenants() {
 
   const actions = (t) => `
     <button class="link-btn" type="button" data-act="profile" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">Profile</button>
+    <button class="link-btn" type="button" data-act="transfer" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">Transfer</button>
+    <button class="link-btn" type="button" data-act="backfill" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">History</button>
+    <button class="link-btn" type="button" data-act="receipt" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">Receipt</button>
+    ${!t.paid ? `<button class="link-btn" type="button" data-act="wa-remind" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">WhatsApp</button>` : ""}
     <button class="link-btn" type="button" data-act="notice" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">${t.onNotice ? "Cancel notice" : "On notice"}</button>
     <button class="link-btn link-danger" type="button" data-act="checkout" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">Check out</button>`;
 
@@ -574,9 +585,72 @@ function openOwnerDialog() {
   const o = PGStore.state().owner || {};
   el("o-name").value = o.name || (window.PG_SESSION && PG_SESSION.name) || "";
   el("o-phone").value = o.phone || "";
+  if (el("o-upi")) { el("o-upi").value = o.upiId || ""; }
   el("o-address").value = o.address || "";
   openDlg("dlg-owner");
 }
+
+/* ---------- backfill payment history ---------- */
+
+let backfillRef = null;
+
+function monthsBetweenJS(from, to) {
+  const out = [];
+  const a = new Date(from + "-01");
+  const b = new Date(to + "-01");
+  if (isNaN(a) || isNaN(b)) { return out; }
+  let y = a.getFullYear(), m = a.getMonth();
+  const ey = b.getFullYear(), em = b.getMonth();
+  let guard = 0;
+  while ((y < ey || (y === ey && m <= em)) && guard++ < 600) {
+    out.push(y + "-" + String(m + 1).padStart(2, "0"));
+    m++; if (m > 11) { m = 0; y++; }
+  }
+  return out;
+}
+
+function monthLabelJS(key) {
+  const [y, mo] = key.split("-").map(Number);
+  return new Date(y, mo - 1, 1).toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+}
+
+function openBackfillDialog(roomId, bedIndex) {
+  const rooms = PGStore.state().rooms;
+  const room = rooms.find((r) => r.id === roomId);
+  if (!room) { return; }
+  const bed = room.beds[bedIndex];
+  if (!bed) { return; }
+
+  backfillRef = { roomId, bedIndex };
+
+  /* Collection day: use bed.collect if set, else derive from joining date. */
+  const joinedDay = bed.joined ? parseInt(bed.joined.split("-")[2], 10) : null;
+  const defaultCollect = bed.collect || joinedDay || 1;
+
+  el("bf-collect").value = bed.collect || "";
+  el("bf-collect").placeholder = "e.g. " + defaultCollect + " (auto-detected from joining date)";
+  el("bf-who").textContent = bed.name + " · Room " + room.no + " · Joined " + (bed.joined || "unknown");
+
+  /* Build month list from joining month → current month. */
+  const fromKey = bed.joined ? bed.joined.slice(0, 7) : new Date().toISOString().slice(0, 7);
+  const toKey = new Date().toISOString().slice(0, 7);
+  const months = monthsBetweenJS(fromKey, toKey);
+  const alreadyPaid = new Set(bed.paidMonths || []);
+
+  el("bf-months").innerHTML = months.map((mk) => {
+    const paid = alreadyPaid.has(mk);
+    const id = "bf-m-" + mk;
+    return `<div class="bf-month-item">
+      <input type="checkbox" id="${id}" name="bf-month" value="${mk}" ${!paid ? "checked" : ""} ${paid ? "" : ""} />
+      <label for="${id}">${monthLabelJS(mk)}</label>
+      ${paid ? '<span class="bf-already">✓ paid</span>' : ""}
+    </div>`;
+  }).join("") || "<p style='font-size:13px;color:var(--muted)'>No past months to backfill.</p>";
+
+  el("bf-err").hidden = true;
+  openDlg("dlg-backfill");
+}
+
 
 /* A PG with floors switched off should never be asked for one. */
 function applyFloorSetting() {
@@ -783,6 +857,145 @@ el("form-offboard").addEventListener("submit", (e) => {
   commit();
 });
 
+/* ---------- receipt & whatsapp ---------- */
+
+let receiptRef = null;
+
+function openReceiptDialog(roomId, bedIndex) {
+  const rooms = PGStore.state().rooms;
+  const room = rooms.find((r) => r.id === roomId);
+  if (!room) { return; }
+  const bed = room.beds[bedIndex];
+  if (!bed) { return; }
+
+  receiptRef = { roomId, bedIndex };
+  const owner = PGStore.state().owner || {};
+  const rent = PGStore.effectiveRent(room, bed);
+  const now = new Date();
+  const monthLabel = now.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  const receiptNo = "RCP-" + now.getFullYear() + String(now.getMonth() + 1).padStart(2, "0") + "-" + Math.random().toString(36).slice(2, 6).toUpperCase();
+  const isPaid = bed.paid;
+
+  el("receipt-paper").innerHTML = `
+    <div class="receipt-brand">
+      <div>
+        <h2>${esc(owner.name || "PG Manager")}</h2>
+        <p>${esc(owner.address || "")}</p>
+      </div>
+      <span class="receipt-tag">${isPaid ? "PAID" : "PENDING"}</span>
+    </div>
+    <div class="receipt-grid">
+      <div class="receipt-cell"><b>Receipt No.</b><span>${receiptNo}</span></div>
+      <div class="receipt-cell"><b>Date</b><span>${now.toLocaleDateString("en-IN")}</span></div>
+      <div class="receipt-cell"><b>Tenant</b><span>${esc(bed.name)}</span></div>
+      <div class="receipt-cell"><b>Room / Bed</b><span>Room ${esc(room.no)} · Bed ${PGStore.bedLabel(bedIndex, roomId)}</span></div>
+      <div class="receipt-cell"><b>Period</b><span>${monthLabel}</span></div>
+      <div class="receipt-cell"><b>Status</b><span>${isPaid ? "✅ Paid" : "⏳ Due"}</span></div>
+    </div>
+    <div class="receipt-amount-box">
+      <span>Rent for ${monthLabel}</span>
+      <strong>${money(rent)}</strong>
+    </div>
+    ${owner.upiId ? `<p style="font-size:12px;text-align:center;margin-bottom:12px;color:#6b7280">Pay via UPI: <b>${esc(owner.upiId)}</b></p>` : ""}
+    <div class="receipt-foot">This is a computer-generated receipt. · ${esc(owner.name || "PG Manager")}</div>`;
+
+  openDlg("dlg-receipt");
+}
+
+function sendWhatsAppReminder(roomId, bedIndex) {
+  const rooms = PGStore.state().rooms;
+  const room = rooms.find((r) => r.id === roomId);
+  if (!room) { return; }
+  const bed = room.beds[bedIndex];
+  if (!bed || !bed.phone) {
+    alert("No phone number saved for this tenant. Add one in their profile first.");
+    return;
+  }
+  const owner = PGStore.state().owner || {};
+  const rent = PGStore.effectiveRent(room, bed);
+  const month = new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  const upiLine = owner.upiId ? `\n💳 UPI: ${owner.upiId}` : "";
+  const msg = `Hi ${bed.name.split(" ")[0]}, this is a friendly reminder that your rent of ${money(rent)} for ${month} is due.${upiLine}\n\n— ${owner.name || "Your PG Owner"}`;
+  const phone = bed.phone.replace(/\D/g, "");
+  window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(msg), "_blank");
+}
+
+/* ---------- transfer form ---------- */
+
+el("form-transfer").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const dest = el("tr-dest").value.split("|");
+  const fromRoom = el("tr-dest").dataset.fromRoom;
+  const fromBed = Number(el("tr-dest").dataset.fromBed);
+  const res = PGStore.transferTenant(fromRoom, fromBed, dest[0], Number(dest[1]));
+  if (!res.ok) { showErr("tr-err", res.error); return; }
+  closeDlg("dlg-transfer");
+  commit();
+});
+
+/* ---------- complaint forms ---------- */
+
+el("form-complaint").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const roomSel = el("co-room").value;
+  const roomData = PGStore.state().rooms.find((r) => r.id === roomSel);
+  const res = PGStore.addComplaint({
+    title: el("co-title").value,
+    roomId: roomSel || "",
+    roomNo: roomData ? roomData.no : "",
+    category: el("co-cat").value,
+    priority: el("co-priority").value,
+    date: el("co-date").value,
+    note: el("co-note").value,
+    status: "open",
+    cost: 0
+  });
+  if (!res.ok) { showErr("co-err", res.error); return; }
+  closeDlg("dlg-complaint");
+  commit();
+});
+
+/* ---------- CSV exporters ---------- */
+
+function csvDownload(filename, rows) {
+  const csv = "\uFEFF" + rows.map((r) => r.map((c) => '"' + String(c == null ? "" : c).replace(/"/g, '""') + '"').join(",")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+  a.download = filename;
+  a.click();
+}
+
+function exportTenantsCsv() {
+  const list = tenants();
+  const rows = [["Name", "Phone", "Room", "Bed", "Rent", "Deposit", "Joined", "Leaving", "Status", "ID Type", "ID No.", "Emergency", "Workplace", "Note"]];
+  list.forEach((t) => rows.push([t.name, t.phone, t.roomNo, t.bed, t.rent, t.deposit, t.joined, t.leaving || "", t.status, t.idType, t.idNumber, t.emergencyContact, t.workplace, t.note]));
+  csvDownload("tenants-" + new Date().toISOString().slice(0, 10) + ".csv", rows);
+}
+
+function exportLedgerCsv() {
+  const rows = [["Tenant", "Room", "Bed", "Month", "Paid"]];
+  PGStore.state().rooms.forEach((room) => {
+    room.beds.forEach((bed, i) => {
+      if (!bed) { return; }
+      const label = PGStore.bedLabel(i, room.id);
+      const months = monthsBetweenJS(
+        bed.joined ? bed.joined.slice(0, 7) : new Date().toISOString().slice(0, 7),
+        new Date().toISOString().slice(0, 7)
+      );
+      months.forEach((m) => {
+        rows.push([bed.name, room.no, label, m, (bed.paidMonths || []).includes(m) ? "Yes" : "No"]);
+      });
+    });
+  });
+  csvDownload("ledger-" + new Date().toISOString().slice(0, 10) + ".csv", rows);
+}
+
+function exportExpensesCsv() {
+  const rows = [["Date", "Category", "Amount", "Note"]];
+  PGStore.state().expenses.forEach((x) => rows.push([x.date, x.category, x.amount, x.note || ""]));
+  csvDownload("expenses-" + new Date().toISOString().slice(0, 10) + ".csv", rows);
+}
+
 /* ---------- actions ---------- */
 
 document.addEventListener("click", (e) => {
@@ -848,6 +1061,48 @@ document.addEventListener("click", (e) => {
     commit();
   } else if (act === "edit-owner") {
     openOwnerDialog();
+  } else if (act === "backfill") {
+    openBackfillDialog(roomId, Number(bedIndex));
+  } else if (act === "bf-all") {
+    el("dlg-backfill").querySelectorAll("input[name=bf-month]").forEach((cb) => { cb.checked = true; });
+  } else if (act === "bf-none") {
+    el("dlg-backfill").querySelectorAll("input[name=bf-month]").forEach((cb) => { cb.checked = false; });
+  } else if (act === "transfer") {
+    /* Open the transfer dialog — populate destination picker with vacant beds. */
+    const src = tenants().find((t) => t.roomId === roomId && t.bedIndex === Number(bedIndex));
+    if (!src) { return; }
+    el("tr-who").textContent = src.name + " — currently Room " + src.roomNo + " Bed " + src.bed;
+    const vacant = PGStore.vacantBeds();
+    if (!vacant.length) { alert("No vacant beds to transfer to."); return; }
+    el("tr-dest").innerHTML = vacant.map((b) =>
+      `<option value="${esc(b.roomId)}|${b.bedIndex}">Room ${esc(b.roomNo)} · Bed ${b.bed} — ${money(b.rent)}</option>`
+    ).join("");
+    el("tr-dest").dataset.fromRoom = roomId;
+    el("tr-dest").dataset.fromBed = bedIndex;
+    el("tr-err").hidden = true;
+    openDlg("dlg-transfer");
+  } else if (act === "receipt") {
+    openReceiptDialog(roomId, Number(bedIndex));
+  } else if (act === "wa-remind") {
+    sendWhatsAppReminder(roomId, Number(bedIndex));
+  } else if (act === "print-receipt") {
+    window.print();
+  } else if (act === "share-receipt") {
+    if (receiptRef) { sendWhatsAppReminder(receiptRef.roomId, receiptRef.bedIndex); }
+  } else if (act === "add-complaint") {
+    el("form-complaint").reset();
+    el("co-date").value = new Date().toISOString().slice(0, 10);
+    /* Populate room picker. */
+    el("co-room").innerHTML = '<option value="">— General / Common area —</option>' +
+      PGStore.state().rooms.map((r) => `<option value="${esc(r.id)}">${esc(r.no)}</option>`).join("");
+    el("co-err").hidden = true;
+    openDlg("dlg-complaint");
+  } else if (act === "export-tenants") {
+    exportTenantsCsv();
+  } else if (act === "export-ledger") {
+    exportLedgerCsv();
+  } else if (act === "export-expenses") {
+    exportExpensesCsv();
   } else if (act === "set-opt") {
     const raw = btn.dataset.val;
     const patch = {};
@@ -919,6 +1174,7 @@ el("form-owner").addEventListener("submit", (e) => {
   const res = PGStore.setOwner({
     name: el("o-name").value,
     phone: el("o-phone").value,
+    upiId: el("o-upi") ? el("o-upi").value : "",
     address: el("o-address").value
   });
   if (!res.ok) { showErr("o-err", res.error); return; }
@@ -930,6 +1186,43 @@ el("form-property").addEventListener("submit", (e) => {
   e.preventDefault();
   PGStore.setProperty(el("p-name").value);
   closeDlg("dlg-property");
+  commit();
+});
+
+el("form-backfill").addEventListener("submit", (e) => {
+  e.preventDefault();
+  if (!backfillRef) { return; }
+
+  /* Collect all checked months. */
+  const checked = Array.from(
+    el("dlg-backfill").querySelectorAll("input[name=bf-month]:checked")
+  ).map((cb) => cb.value);
+
+  if (!checked.length) {
+    showErr("bf-err", "Check at least one month, or cancel.");
+    return;
+  }
+
+  /* Resolve collection day: explicit input → joining date day → 1. */
+  let collectDay = parseInt(el("bf-collect").value, 10);
+  if (!collectDay || collectDay < 1 || collectDay > 31) {
+    /* Auto-detect from joining date. */
+    const rooms = PGStore.state().rooms;
+    const room = rooms.find((r) => r.id === backfillRef.roomId);
+    const bed = room && room.beds[backfillRef.bedIndex];
+    collectDay = (bed && bed.joined) ? parseInt(bed.joined.split("-")[2], 10) : 1;
+  }
+
+  const res = PGStore.bulkMarkPaid(
+    backfillRef.roomId,
+    backfillRef.bedIndex,
+    checked,
+    collectDay
+  );
+
+  if (!res.ok) { showErr("bf-err", res.error); return; }
+  closeDlg("dlg-backfill");
+  backfillRef = null;
   commit();
 });
 
