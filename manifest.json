@@ -1,0 +1,19 @@
+﻿{
+  "name": "PG Manager · Property & Rent Management",
+  "short_name": "PG Manager",
+  "description": "Full-featured hostel and paying guest property management software.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0C0E14",
+  "theme_color": "#0C0E14",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
