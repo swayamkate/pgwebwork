@@ -6,19 +6,30 @@
 <title>PG Manager — Beds, Tenants &amp; Rent</title>
 <meta name="description" content="Owner dashboard to manage PG beds, tenants and rent collection." />
 <meta name="theme-color" content="#0C0E14" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="manifest" href="manifest.json" />
 <script>try{var t=localStorage.getItem("pgTheme");if(t){document.documentElement.dataset.theme=t;}}catch(e){}</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%234F46E5'/%3E%3Cg fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 18v-8'/%3E%3Cpath d='M4 14h16v4'/%3E%3Cpath d='M20 14v-1.5a2 2 0 0 0-2-2h-7V14'/%3E%3C/g%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=8" />
-<link rel="stylesheet" href="manage.css?v=8" />
+<link rel="stylesheet" href="styles.css?v=9" />
+<link rel="stylesheet" href="manage.css?v=9" />
 <style>html.auth-pending body{visibility:hidden}</style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <!-- Reads .xlsx in the browser. Deferred because it is only needed once the
      owner actually opens the import panel; CSV and pasted cells never need it. -->
 <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="config.js?v=8"></script>
-<script src="auth.js?v=8"></script>
-<script src="store.js?v=8"></script>
-<script src="sheets.js?v=8"></script>
+<script src="config.js?v=9"></script>
+<script src="auth.js?v=9"></script>
+<script src="store.js?v=9"></script>
+<script src="sheets.js?v=9"></script>
+<script>
+  // Register PWA Service Worker
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("./sw.js").catch(function () {});
+    });
+  }
+</script>
 <script>
   // Hide the dashboard until we know whether a session exists, so a signed-out
   // visitor never sees the page before the redirect happens.
@@ -81,6 +92,7 @@
       <button class="tab" data-view="tenants">Tenants</button>
       <button class="tab" data-view="rent">Rent</button>
       <button class="tab" data-view="expenses">Expenses</button>
+      <button class="tab" data-view="complaints">Issues</button>
       <button class="tab" data-view="owner">Owner</button>
     </div>
   </div>
@@ -188,6 +200,10 @@
         <h1 id="rent-title">Rent</h1>
         <p class="sub">Collection status for the current cycle.</p>
       </div>
+      <div class="head-actions">
+        <button class="btn-ghost btn-sm" data-act="export-ledger" type="button">Export Ledger CSV</button>
+        <button class="btn-ghost btn-sm" data-act="export-tenants" type="button">Export Tenants CSV</button>
+      </div>
     </div>
     <div class="stats stats-3" id="rent-stats"></div>
     <div class="card">
@@ -204,6 +220,7 @@
         <p class="sub">What the property costs you to run each month.</p>
       </div>
       <div class="head-actions">
+        <button class="btn-ghost btn-sm" data-act="export-expenses" type="button">Export CSV</button>
         <button class="btn-ghost btn-sm" data-act="import-data" type="button">Import</button>
         <button class="btn-primary btn-sm" data-act="add-expense" type="button">Add expense</button>
       </div>
@@ -216,6 +233,34 @@
       </div>
       <ul class="paylist" id="exp-list"></ul>
     </div>
+  </section>
+
+  <!-- COMPLAINTS & MAINTENANCE -->
+  <section class="view" id="view-complaints">
+    <div class="page-head">
+      <div>
+        <h1>Maintenance &amp; Issues</h1>
+        <p class="sub">Track repair requests, room complaints, and maintenance costs.</p>
+      </div>
+      <div class="head-actions">
+        <button class="btn-primary btn-sm" data-act="add-complaint" type="button">Log an issue</button>
+      </div>
+    </div>
+
+    <div class="complaints-toolbar">
+      <div class="pills-group" id="comp-filters">
+        <button class="pill is-active" data-filter="all" type="button">All (<span id="comp-count-all">0</span>)</button>
+        <button class="pill" data-filter="open" type="button">Open (<span id="comp-count-open">0</span>)</button>
+        <button class="pill" data-filter="in_progress" type="button">In Progress (<span id="comp-count-prog">0</span>)</button>
+        <button class="pill" data-filter="resolved" type="button">Resolved (<span id="comp-count-res">0</span>)</button>
+      </div>
+    </div>
+
+    <div class="card" id="comp-empty" hidden>
+      <p class="feed-blank">No issues logged yet. Tap "Log an issue" to track any repairs or maintenance.</p>
+    </div>
+
+    <div class="complaints-list" id="comp-list"></div>
   </section>
 
   <!-- OWNER -->
@@ -306,9 +351,23 @@
       <label class="field span-2"><span>Full name</span><input id="t-name" maxlength="60" placeholder="Rohit Sharma" required /></label>
       <label class="field"><span>Phone</span><input id="t-phone" maxlength="24" placeholder="+91 98765 43210" /></label>
       <label class="field"><span>Rent (₹/mo) <i class="field-opt">optional custom</i></span><input id="t-rent" type="number" min="0" step="100" placeholder="Default room rent" /></label>
+      <label class="field"><span>Security deposit held (₹)</span><input id="t-deposit" type="number" min="0" step="100" placeholder="e.g. 10000" /></label>
+      <label class="field"><span>ID document type</span>
+        <select id="t-idtype">
+          <option value="Aadhaar" selected>Aadhaar Card</option>
+          <option value="PAN">PAN Card</option>
+          <option value="Passport">Passport</option>
+          <option value="Driving License">Driving License</option>
+          <option value="College ID">College / Student ID</option>
+          <option value="Work ID">Work / Company ID</option>
+          <option value="Other">Other</option>
+        </select></label>
+      <label class="field"><span>ID document number</span><input id="t-idnum" maxlength="40" placeholder="e.g. 1234 5678 9012" /></label>
+      <label class="field"><span>Emergency contact</span><input id="t-emergency" maxlength="60" placeholder="Father: +91 98765 00000" /></label>
+      <label class="field span-2"><span>Workplace / College</span><input id="t-workplace" maxlength="60" placeholder="e.g. Infosys / COEP" /></label>
       <label class="field"><span>Joining date</span><input id="t-joined" type="date" /></label>
       <label class="field"><span>Leaving date <i class="field-opt">optional</i></span><input id="t-leaving" type="date" /></label>
-      <label class="field span-2"><span>Note <i class="field-opt">optional</i></span><textarea id="t-note" maxlength="200" rows="2" placeholder="Deposit paid, food preference, parent&rsquo;s number&hellip;"></textarea></label>
+      <label class="field span-2"><span>Note <i class="field-opt">optional</i></span><textarea id="t-note" maxlength="200" rows="2" placeholder="Food preference, parent&rsquo;s number&hellip;"></textarea></label>
     </div>
     <p class="auth-error" id="t-err" hidden></p>
     <div class="dlg-foot">
@@ -399,6 +458,7 @@
     <div class="form-grid">
       <label class="field span-2"><span>Your name</span><input id="o-name" maxlength="60" placeholder="Swayam Kate" required /></label>
       <label class="field span-2"><span>Phone <i class="field-opt">optional</i></span><input id="o-phone" maxlength="24" placeholder="+91 98765 43210" /></label>
+      <label class="field span-2"><span>UPI ID for rent reminders <i class="field-opt">e.g. name@upi</i></span><input id="o-upi" maxlength="60" placeholder="owner@okaxis" /></label>
       <label class="field span-2"><span>Property address <i class="field-opt">optional</i></span><input id="o-address" maxlength="120" placeholder="Street, area, city" /></label>
     </div>
     <p class="auth-error" id="o-err" hidden></p>
@@ -528,6 +588,126 @@
     <div class="dlg-foot">
       <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-offboard">Cancel</button>
       <button class="btn-primary btn-sm" id="ob-submit" type="submit">Complete Check-out &amp; Settle</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- TRANSFER BED -->
+<dialog class="dlg" id="dlg-transfer">
+  <form class="dlg-card" id="form-transfer">
+    <h3>Transfer to another bed</h3>
+    <p class="dlg-sub" id="tr-who">Move tenant without losing their past payment history.</p>
+    <div class="form-grid">
+      <label class="field span-2"><span>Select vacant destination bed</span><select id="tr-dest" required></select></label>
+    </div>
+    <p class="auth-error" id="tr-err" hidden></p>
+    <div class="dlg-foot">
+      <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-transfer">Cancel</button>
+      <button class="btn-primary btn-sm" type="submit">Confirm Transfer</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- DIGITAL RENT RECEIPT -->
+<dialog class="dlg dlg-wide" id="dlg-receipt">
+  <div class="dlg-card">
+    <div class="receipt-paper" id="receipt-paper"></div>
+    <div class="dlg-foot">
+      <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-receipt">Close</button>
+      <button class="btn-ghost" type="button" data-act="print-receipt">Print / Save PDF</button>
+      <button class="btn-primary btn-sm" type="button" data-act="share-receipt">Share on WhatsApp</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- LOG COMPLAINT / ISSUE -->
+<dialog class="dlg" id="dlg-complaint">
+  <form class="dlg-card" id="form-complaint">
+    <h3>Log a maintenance issue</h3>
+    <div class="form-grid">
+      <label class="field span-2"><span>Issue title</span><input id="co-title" maxlength="80" placeholder="e.g. Geyser leaking / AC not cooling" required /></label>
+      <label class="field"><span>Room <i class="field-opt">optional</i></span><select id="co-room"></select></label>
+      <label class="field"><span>Category</span>
+        <select id="co-cat">
+          <option value="Plumbing">Plumbing</option>
+          <option value="Electrical">Electrical</option>
+          <option value="Carpentry">Carpentry</option>
+          <option value="Appliance">Appliance / AC</option>
+          <option value="Cleaning">Cleaning</option>
+          <option value="Wifi / Internet">Wifi / Internet</option>
+          <option value="General" selected>General</option>
+        </select></label>
+      <label class="field"><span>Priority</span>
+        <select id="co-priority">
+          <option value="high">High (Urgent)</option>
+          <option value="medium" selected>Medium</option>
+          <option value="low">Low</option>
+        </select></label>
+      <label class="field"><span>Date reported</span><input id="co-date" type="date" required /></label>
+      <label class="field span-2"><span>Details / notes</span><textarea id="co-note" maxlength="200" rows="2" placeholder="Description of the issue or technician contact..."></textarea></label>
+    </div>
+    <p class="auth-error" id="co-err" hidden></p>
+    <div class="dlg-foot">
+      <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-complaint">Cancel</button>
+      <button class="btn-primary btn-sm" type="submit">Log issue</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- RESOLVE ISSUE -->
+<dialog class="dlg" id="dlg-resolve-complaint">
+  <form class="dlg-card" id="form-resolve-complaint">
+    <h3>Update Issue Status</h3>
+    <p class="dlg-sub" id="rco-title"></p>
+    <div class="form-grid">
+      <label class="field span-2"><span>Status</span>
+        <select id="rco-status">
+          <option value="open">Open</option>
+          <option value="in_progress">In Progress</option>
+          <option value="resolved">Resolved</option>
+        </select></label>
+      <label class="field span-2"><span>Repair cost (₹) <i class="field-opt">optional</i></span><input id="rco-cost" type="number" min="0" step="10" placeholder="0" /></label>
+      <label class="field span-2" style="display:flex;flex-direction:row;align-items:center;gap:8px">
+        <input type="checkbox" id="rco-sync-exp" checked style="width:auto;min-height:auto" />
+        <span style="margin:0;font-size:13px">Automatically add repair cost to Expenses under Maintenance</span>
+      </label>
+    </div>
+    <p class="auth-error" id="rco-err" hidden></p>
+    <div class="dlg-foot">
+      <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-resolve-complaint">Cancel</button>
+      <button class="btn-primary btn-sm" type="submit">Save status</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- BACKFILL PAYMENT HISTORY -->
+<dialog class="dlg dlg-wide" id="dlg-backfill">
+  <form class="dlg-card" id="form-backfill">
+    <h3>Add past payment history</h3>
+    <p class="dlg-sub" id="bf-who"></p>
+
+    <div class="form-grid">
+      <label class="field span-2">
+        <span>Rent collection day of month <i class="field-opt">leave blank to use joining date</i></span>
+        <input id="bf-collect" type="number" min="1" max="31" placeholder="e.g. 5 (leave empty to auto-detect)" />
+      </label>
+    </div>
+
+    <p style="font-size:13px;color:var(--muted);margin:8px 0 4px">
+      Tick the months that have already been paid. All months are pre-selected — uncheck any that are still unpaid.
+    </p>
+
+    <div id="bf-months" class="bf-months-grid"></div>
+
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn-ghost btn-sm" type="button" data-act="bf-all">Check all</button>
+      <button class="btn-ghost btn-sm" type="button" data-act="bf-none">Uncheck all</button>
+    </div>
+
+    <p class="auth-error" id="bf-err" hidden></p>
+    <div class="dlg-foot">
+      <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-backfill">Cancel</button>
+      <button class="btn-primary btn-sm" type="submit">Save payment history</button>
     </div>
   </form>
 </dialog>
