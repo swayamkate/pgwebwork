@@ -163,6 +163,8 @@
     var rentAmt = (global.PGStore && PGStore.effectiveRent) ? PGStore.effectiveRent(room, bed) : (bed.rent != null ? bed.rent : room.rent);
     var rentSub = (bed.rent != null && bed.rent > 0) ? "custom rate per month" : "room default per month";
 
+    var idDetails = bed.idNumber ? ((bed.idType ? bed.idType + ": " : "") + bed.idNumber) : "\u2014";
+
     return '' +
       '<div class="pf-head">' +
         '<span class="av pf-av">' + esc(initials(bed.name)) + '</span>' +
@@ -179,6 +181,10 @@
         cell("Bed number", "Bed " + esc(bedLabel(current.bedIndex, current.roomId)), "") +
         cell("Phone", tel ? '<a href="tel:' + esc(tel) + '">' + esc(phone) + '</a>' : "\u2014", "") +
         cell("Monthly rent", money(rentAmt), rentSub) +
+        cell("Security deposit", bed.deposit ? money(bed.deposit) : "\u20b90", bed.deposit ? "held with owner" : "not recorded") +
+        cell("ID document", esc(idDetails), "") +
+        cell("Emergency contact", esc(bed.emergencyContact || "\u2014"), "") +
+        cell("Workplace / College", esc(bed.workplace || "\u2014"), "") +
         cell("Joining date", pretty(bed.joined), stayLabel(bed.joined)) +
         cell("Leaving date", bed.leaving ? pretty(bed.leaving) : "\u2014",
           leaveLabel(bed.leaving) || (bed.onNotice ? "on notice, no date set" : "no date set")) +
@@ -188,7 +194,7 @@
 
       '<div class="pf-note"><b>Note</b>' +
         (note ? "<p>" + esc(note) + "</p>"
-              : '<p class="pf-blank">Nothing noted yet. Deposit, food preference, parent\u2019s number \u2014 anything worth remembering.</p>') +
+              : '<p class="pf-blank">Nothing noted yet. Food preference, parent\u2019s number \u2014 anything worth remembering.</p>') +
       '</div>' +
 
       '<div class="pf-foot">' +
@@ -196,6 +202,10 @@
           '<button class="link-btn" type="button" data-act="pay"' + ref +
             ' data-paid="' + (bed.paid ? "0" : "1") + '">' +
             (bed.paid ? "Undo payment" : "Mark rent paid") + '</button>' +
+          '<button class="link-btn" type="button" data-act="backfill"' + ref + '>Add history</button>' +
+          '<button class="link-btn" type="button" data-act="transfer"' + ref + '>Transfer bed</button>' +
+          '<button class="link-btn" type="button" data-act="receipt"' + ref + '>Receipt</button>' +
+          '<button class="link-btn" type="button" data-act="wa-remind"' + ref + '>WhatsApp</button>' +
           '<button class="link-btn" type="button" data-act="notice"' + ref + '>' +
             (bed.onNotice ? "Cancel notice" : "Put on notice") + '</button>' +
           '<button class="link-btn link-danger" type="button" data-act="checkout"' + ref + '>Check out</button>' +
@@ -209,6 +219,8 @@
     var bed = found.bed;
     var room = found.room;
     var customRentVal = (bed.rent != null && bed.rent !== "") ? String(bed.rent) : "";
+    var depositVal = (bed.deposit != null && bed.deposit > 0) ? String(bed.deposit) : "";
+    var idType = bed.idType || "Aadhaar";
 
     return '' +
       '<form class="pf-form" id="pf-form">' +
@@ -221,6 +233,24 @@
             '" placeholder="+91 98765 43210" /></label>' +
           '<label class="field"><span>Custom rent (\u20b9/mo) <i class="field-opt">optional</i></span>' +
             '<input id="pf-rent" type="number" min="0" step="100" value="' + esc(customRentVal) + '" placeholder="Default: ' + money(room.rent) + '" /></label>' +
+          '<label class="field"><span>Security deposit held (\u20b9)</span>' +
+            '<input id="pf-deposit" type="number" min="0" step="100" value="' + esc(depositVal) + '" placeholder="e.g. 10000" /></label>' +
+          '<label class="field"><span>ID document type</span>' +
+            '<select id="pf-idtype">' +
+              '<option value="Aadhaar"' + (idType === "Aadhaar" ? " selected" : "") + '>Aadhaar Card</option>' +
+              '<option value="PAN"' + (idType === "PAN" ? " selected" : "") + '>PAN Card</option>' +
+              '<option value="Passport"' + (idType === "Passport" ? " selected" : "") + '>Passport</option>' +
+              '<option value="Driving License"' + (idType === "Driving License" ? " selected" : "") + '>Driving License</option>' +
+              '<option value="College ID"' + (idType === "College ID" ? " selected" : "") + '>College / Student ID</option>' +
+              '<option value="Work ID"' + (idType === "Work ID" ? " selected" : "") + '>Work / Company ID</option>' +
+              '<option value="Other"' + (idType === "Other" ? " selected" : "") + '>Other</option>' +
+            '</select></label>' +
+          '<label class="field"><span>ID document number</span>' +
+            '<input id="pf-idnum" maxlength="40" value="' + esc(bed.idNumber || "") + '" placeholder="e.g. 1234 5678 9012" /></label>' +
+          '<label class="field"><span>Emergency contact</span>' +
+            '<input id="pf-emergency" maxlength="60" value="' + esc(bed.emergencyContact || "") + '" placeholder="Father: +91 98765 00000" /></label>' +
+          '<label class="field"><span>Workplace / College</span>' +
+            '<input id="pf-workplace" maxlength="60" value="' + esc(bed.workplace || "") + '" placeholder="e.g. Infosys / COEP" /></label>' +
           '<label class="field"><span>Joining date</span>' +
             '<input id="pf-joined" type="date" value="' + esc(dateValue(bed.joined)) + '" /></label>' +
           '<label class="field"><span>Leaving date</span>' +
@@ -299,6 +329,11 @@
       leaving: val("pf-leaving"),
       collect: val("pf-collect"),
       rent: rentVal,
+      deposit: val("pf-deposit"),
+      idType: val("pf-idtype"),
+      idNumber: val("pf-idnum"),
+      emergencyContact: val("pf-emergency"),
+      workplace: val("pf-workplace"),
       note: val("pf-note")
     });
 
