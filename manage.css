@@ -416,3 +416,75 @@ button.bed-add:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .acc-row .pay-name{display:block;line-height:1.35}
 .acc-row .muted-sm{line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .acc-you{margin-left:6px}
+
+/* ---------- receipts ---------- */
+.receipt-paper{
+  background:#ffffff;color:#111827;border-radius:12px;padding:24px 20px;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  box-shadow:var(--shadow-sm);margin-bottom:18px;border:1px solid #e5e7eb;
+}
+.receipt-brand{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111827;padding-bottom:14px;margin-bottom:16px}
+.receipt-brand h2{margin:0;font-size:20px;font-weight:750;color:#111827;letter-spacing:-.02em}
+.receipt-brand p{margin:2px 0 0;font-size:12px;color:#6b7280}
+.receipt-tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;background:#10b981;color:#ffffff;padding:4px 8px;border-radius:6px}
+.receipt-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;font-size:13px}
+.receipt-cell b{display:block;font-size:10.5px;text-transform:uppercase;color:#6b7280;letter-spacing:.04em;margin-bottom:2px}
+.receipt-cell span{color:#111827;font-weight:550}
+.receipt-amount-box{background:#f3f4f6;border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.receipt-amount-box span{font-size:13.5px;font-weight:600;color:#374151}
+.receipt-amount-box strong{font-size:22px;font-weight:800;color:#111827}
+.receipt-foot{font-size:11px;color:#9ca3af;text-align:center;border-top:1px dashed #e5e7eb;padding-top:10px}
+
+/* ---------- complaints & maintenance ---------- */
+.complaints-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.pills-group{display:flex;gap:6px;background:var(--surface-2);padding:4px;border-radius:10px;border:1px solid var(--border)}
+.pill{background:transparent;border:0;padding:6px 12px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s ease}
+.pill.is-active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-xs)}
+.complaints-list{display:flex;flex-direction:column;gap:10px}
+.comp-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:16px 18px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow-sm);
+  transition:border-color .15s ease;
+}
+.comp-card:hover{border-color:var(--border-strong)}
+.comp-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.comp-title{font-size:15px;font-weight:650;color:var(--text);line-height:1.35}
+.comp-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.badge-priority-high{background:var(--red-soft);color:var(--red)}
+.badge-priority-medium{background:var(--amber-soft);color:var(--amber)}
+.badge-priority-low{background:var(--surface-3);color:var(--muted)}
+.badge-status-open{background:var(--amber-soft);color:var(--amber)}
+.badge-status-in_progress{background:var(--brand-soft);color:var(--brand)}
+.badge-status-resolved{background:var(--green-soft);color:var(--green)}
+
+/* ---------- export analytics ---------- */
+.export-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.btn-export{background:var(--surface-2);border:1px solid var(--border);color:var(--text);font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn-export:hover{background:var(--surface-3);border-color:var(--border-strong)}
+
+/* Print Styles */
+@media print {
+  body * { visibility: hidden !important; }
+  .receipt-paper, .receipt-paper * { visibility: visible !important; }
+  .receipt-paper { position: absolute; left: 0; top: 0; width: 100%; border: 0 !important; box-shadow: none !important; }
+}
+
+/* ---------- backfill month grid ---------- */
+.bf-months-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+  gap:8px;max-height:280px;overflow-y:auto;padding:4px 2px;
+}
+.bf-month-item{
+  display:flex;align-items:center;gap:8px;
+  background:var(--surface-2);border:1px solid var(--border);border-radius:9px;
+  padding:9px 12px;cursor:pointer;transition:all .15s ease;
+  font-size:13.5px;font-weight:600;color:var(--text);
+}
+.bf-month-item input[type=checkbox]{
+  accent-color:var(--brand);width:15px;height:15px;flex-shrink:0;cursor:pointer;
+}
+.bf-month-item:has(input:checked){
+  background:var(--brand-soft);border-color:var(--brand);
+}
+.bf-month-item label{cursor:pointer;margin:0;font-size:inherit;line-height:1}
+.bf-already{font-size:11px;font-weight:500;color:var(--green);margin-left:auto}
