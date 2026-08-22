@@ -20,7 +20,8 @@
       activity: [],
       expenses: [],
       rates: [],
-      owner: { name: "", phone: "", address: "" },
+      complaints: [],
+      owner: { name: "", phone: "", address: "", upiId: "" },
       settings: defaultSettings(),
       cycle: cycleId()
     };
@@ -208,7 +209,8 @@
       out.owner = {
         name: clean(raw.owner.name, 60),
         phone: clean(raw.owner.phone, 24),
-        address: clean(raw.owner.address, 120)
+        address: clean(raw.owner.address, 120),
+        upiId: clean(raw.owner.upiId, 60)
       };
     }
 
@@ -262,6 +264,11 @@
               note: clean(b.note, 200),
               collect: day(b.collect),
               rent: bedRent,
+              deposit: Math.max(0, Number(b.deposit) || 0),
+              idType: clean(b.idType, 30),
+              idNumber: clean(b.idNumber, 40),
+              emergencyContact: clean(b.emergencyContact, 60),
+              workplace: clean(b.workplace, 60),
               onNotice: !!b.onNotice,
               paidMonths: months,
               paid: months.indexOf(thisMonth()) !== -1
@@ -269,6 +276,26 @@
           })
         };
       });
+    }
+
+    if (isArray(raw.complaints)) {
+      out.complaints = raw.complaints.filter(function (c) {
+        return c && typeof c === "object";
+      }).map(function (c) {
+        return {
+          id: c.id || uid(),
+          title: clean(c.title, 80),
+          roomId: clean(c.roomId, 40),
+          roomNo: clean(c.roomNo, 12),
+          category: clean(c.category, 30) || "General",
+          priority: (c.priority === "high" || c.priority === "low") ? c.priority : "medium",
+          status: (c.status === "in_progress" || c.status === "resolved") ? c.status : "open",
+          cost: Math.max(0, Number(c.cost) || 0),
+          note: clean(c.note, 200),
+          date: clean(c.date, 24) || today(),
+          resolvedAt: clean(c.resolvedAt, 24)
+        };
+      }).slice(0, 200);
     }
 
     if (isArray(raw.activity)) {
@@ -469,6 +496,11 @@
         note: clean(data.note, 200),
         collect: day(data.collect),
         rent: customRent,
+        deposit: Math.max(0, Number(data.deposit) || 0),
+        idType: clean(data.idType, 30),
+        idNumber: clean(data.idNumber, 40),
+        emergencyContact: clean(data.emergencyContact, 60),
+        workplace: clean(data.workplace, 60),
         onNotice: false,
         paid: false
       };
@@ -479,8 +511,7 @@
       return { ok: true };
     },
 
-    /* Edit someone already in a bed. The bed itself never moves here, so rent
-       and payment state are left exactly as they were unless custom rent is provided. */
+    /* Edit someone already in a bed. */
     updateTenant: function (roomId, bedIndex, data) {
       var target = room(roomId);
       var i = Number(bedIndex);
@@ -498,6 +529,14 @@
       bed.note = clean(data.note, 200);
       bed.collect = day(data.collect);
 
+      if (data.deposit !== undefined) {
+        bed.deposit = Math.max(0, Number(data.deposit) || 0);
+      }
+      if (data.idType !== undefined) { bed.idType = clean(data.idType, 30); }
+      if (data.idNumber !== undefined) { bed.idNumber = clean(data.idNumber, 40); }
+      if (data.emergencyContact !== undefined) { bed.emergencyContact = clean(data.emergencyContact, 60); }
+      if (data.workplace !== undefined) { bed.workplace = clean(data.workplace, 60); }
+
       if (data.rent !== undefined) {
         bed.rent = (data.rent != null && data.rent !== "" && !isNaN(Number(data.rent)))
           ? Math.max(0, Number(data.rent))
@@ -507,6 +546,28 @@
       log("in",
         before === name ? name + "'s details updated" : before + " is now " + name,
         "Room " + target.no + " \u00b7 Bed " + bedLabel(i, target.id));
+      save();
+      return { ok: true };
+    },
+
+    /* Move a tenant to a different vacant bed without checking them out. */
+    transferTenant: function (fromRoomId, fromBedIndex, toRoomId, toBedIndex) {
+      var srcRoom = room(fromRoomId);
+      var dstRoom = room(toRoomId);
+      var srcI = Number(fromBedIndex);
+      var dstI = Number(toBedIndex);
+
+      if (!srcRoom || !srcRoom.beds[srcI]) { return { ok: false, error: "Source bed is empty." }; }
+      if (!dstRoom || dstI < 0 || dstI >= dstRoom.beds.length) { return { ok: false, error: "Pick a valid destination bed." }; }
+      if (dstRoom.beds[dstI]) { return { ok: false, error: "Destination bed is already occupied." }; }
+
+      var tenant = srcRoom.beds[srcI];
+      srcRoom.beds[srcI] = null;
+      dstRoom.beds[dstI] = tenant;
+
+      log("in", tenant.name + " moved rooms",
+        "From Room " + srcRoom.no + " Bed " + bedLabel(srcI, srcRoom.id) +
+        " \u2192 Room " + dstRoom.no + " Bed " + bedLabel(dstI, dstRoom.id));
       save();
       return { ok: true };
     },
@@ -552,6 +613,40 @@
       }
       save();
       return { ok: true };
+    },
+
+    /* Backfill past payment history in bulk.  months is an array of "yyyy-mm"
+       strings selected by the owner; selectedMonths that are already marked
+       will be silently skipped, and unselected ones won't be touched.
+       collectDay (1-31) is stored so the ledger can show the recurring day. */
+    bulkMarkPaid: function (roomId, bedIndex, months, collectDay) {
+      var target = room(roomId);
+      var bed = target && target.beds[bedIndex];
+      if (!bed) { return { ok: false, error: "That bed is empty." }; }
+
+      var added = 0;
+      if (!isArray(bed.paidMonths)) { bed.paidMonths = []; }
+
+      months.forEach(function (m) {
+        if (isMonth(m) && bed.paidMonths.indexOf(m) === -1) {
+          bed.paidMonths.push(m);
+          added++;
+        }
+      });
+
+      bed.paidMonths.sort();
+      bed.paid = bed.paidMonths.indexOf(thisMonth()) !== -1;
+
+      /* Persist collection day if the caller provided one. */
+      if (collectDay != null) {
+        var d = day(collectDay);
+        if (d) { bed.collect = d; }
+      }
+
+      log("pay", added + " month" + (added !== 1 ? "s" : "") + " of back-history marked paid for " + bed.name,
+        "Room " + target.no + " · Bed " + bedLabel(Number(bedIndex), target.id));
+      save();
+      return { ok: true, added: added };
     },
 
     /* ---------- rent ---------- */
@@ -890,9 +985,96 @@
       state.owner = {
         name: name,
         phone: clean(data.phone, 24),
-        address: clean(data.address, 120)
+        address: clean(data.address, 120),
+        upiId: clean(data.upiId, 60)
       };
       log("in", "Owner details updated", name);
+      save();
+      return { ok: true };
+    },
+
+    /* ---------- complaints & maintenance tracker ---------- */
+
+    complaints: function () { return state.complaints || []; },
+
+    addComplaint: function (data) {
+      var title = clean(data.title, 80);
+      if (!title) { return { ok: false, error: "Enter a title for the issue." }; }
+
+      var entry = {
+        id: uid(),
+        title: title,
+        roomId: clean(data.roomId, 40),
+        roomNo: clean(data.roomNo, 12),
+        category: clean(data.category, 30) || "General",
+        priority: (data.priority === "high" || data.priority === "low") ? data.priority : "medium",
+        status: (data.status === "in_progress" || data.status === "resolved") ? data.status : "open",
+        cost: Math.max(0, Number(data.cost) || 0),
+        note: clean(data.note, 200),
+        date: clean(data.date, 24) || today(),
+        resolvedAt: data.status === "resolved" ? (clean(data.resolvedAt, 24) || today()) : ""
+      };
+
+      if (!state.complaints) { state.complaints = []; }
+      state.complaints.unshift(entry);
+
+      log("out", "Issue logged: " + title, (entry.roomNo ? "Room " + entry.roomNo + " · " : "") + entry.category);
+      save();
+      return { ok: true, complaint: entry };
+    },
+
+    updateComplaint: function (id, data) {
+      if (!state.complaints) { return { ok: false, error: "No complaints." }; }
+      var found = null;
+      for (var i = 0; i < state.complaints.length; i++) {
+        if (state.complaints[i].id === id) { found = state.complaints[i]; break; }
+      }
+      if (!found) { return { ok: false, error: "Issue not found." }; }
+
+      if (data.title) { found.title = clean(data.title, 80); }
+      if (data.category) { found.category = clean(data.category, 30); }
+      if (data.priority) { found.priority = data.priority; }
+      if (data.note !== undefined) { found.note = clean(data.note, 200); }
+      if (data.roomId !== undefined) { found.roomId = clean(data.roomId, 40); }
+      if (data.roomNo !== undefined) { found.roomNo = clean(data.roomNo, 12); }
+
+      if (data.status) {
+        found.status = data.status;
+        if (found.status === "resolved" && !found.resolvedAt) {
+          found.resolvedAt = today();
+        }
+      }
+
+      if (data.cost !== undefined) {
+        found.cost = Math.max(0, Number(data.cost) || 0);
+      }
+
+      if (data.syncExpense && found.status === "resolved" && found.cost > 0) {
+        state.expenses.push({
+          id: uid(),
+          date: today(),
+          category: "Maintenance",
+          note: "Repair: " + found.title + (found.roomNo ? " (Room " + found.roomNo + ")" : ""),
+          amount: found.cost
+        });
+        sortExpenses(state.expenses);
+      }
+
+      log("in", "Issue " + found.title + " updated", "Status: " + found.status + (found.cost ? " · ₹" + found.cost.toLocaleString("en-IN") : ""));
+      save();
+      return { ok: true };
+    },
+
+    removeComplaint: function (id) {
+      if (!state.complaints) { return { ok: false, error: "Issue not found." }; }
+      var gone = null;
+      state.complaints = state.complaints.filter(function (c) {
+        if (c.id === id) { gone = c; return false; }
+        return true;
+      });
+      if (!gone) { return { ok: false, error: "Issue not found." }; }
+
+      log("in", "Issue removed", gone.title);
       save();
       return { ok: true };
     },
