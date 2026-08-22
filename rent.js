@@ -138,6 +138,8 @@
           '</span></span>' +
           '<span class="pay-right">' +
             '<span class="amount">' + money(p.amount) + '</span>' +
+            '<button class="link-btn" type="button" data-act="wa-remind" data-room="' +
+              esc(p.roomId) + '" data-bed="' + p.bedIndex + '">WhatsApp</button>' +
             '<button class="link-btn" type="button" data-act="lg-open" data-room="' +
               esc(p.roomId) + '" data-bed="' + p.bedIndex + '">' +
               p.months + (p.months === 1 ? ' month due' : ' months due') + '</button>' +
@@ -167,6 +169,8 @@
           '<span class="pay-right">' +
             '<span class="badge badge-' + (clear ? 'paid' : 'due') + '">' +
               r.paid + ' of ' + r.total + '</span>' +
+            '<button class="link-btn" type="button" data-act="receipt" data-room="' +
+              esc(r.roomId) + '" data-bed="' + r.bedIndex + '">Receipt</button>' +
             '<button class="link-btn" type="button" data-act="lg-open" data-room="' +
               esc(r.roomId) + '" data-bed="' + r.bedIndex + '">History</button>' +
           '</span></li>';
