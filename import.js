@@ -1,4 +1,4 @@
-/* PG Manager - spreadsheet import.
+/* PG Manager — spreadsheet import.
 
    Lets the owner bring in a property they already keep in Excel or Google
    Sheets instead of retyping it. Three steps: read the file (or pasted cells),

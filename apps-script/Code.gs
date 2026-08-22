@@ -1,9 +1,9 @@
-/* PG Manager - Google Sheets backup endpoint.
+/* PG Manager — Google Sheets backup endpoint.
 
-   Paste this into Extensions ? Apps Script from the spreadsheet that should
+   Paste this into Extensions → Apps Script from the spreadsheet that should
    hold the backups, set TOKEN below, then deploy it as a web app:
 
-     Deploy ? New deployment ? Web app
+     Deploy → New deployment → Web app
        Execute as:      Me
        Who has access:  Anyone
 

@@ -1,11 +1,11 @@
-/* PG Manager - tenant profile.
+/* PG Manager — tenant profile.
 
    One panel per tenant: who they are, which bed they hold, when they moved in,
    when they are due to leave, and whatever note the owner keeps on them.
 
    The dialog builds itself and appends to the body, so index.html only has to
    load this file. Rent, notice and check-out reuse the actions app.js already
-   owns - this file just re-draws itself afterwards, because its click listener
+   owns — this file just re-draws itself afterwards, because its click listener
    is registered after app.js's and therefore runs second.
 */
 (function (global) {
