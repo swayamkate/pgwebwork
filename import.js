@@ -1,4 +1,4 @@
-/* PG Manager — spreadsheet import.
+/* PG Manager - spreadsheet import.
 
    Lets the owner bring in a property they already keep in Excel or Google
    Sheets instead of retyping it. Three steps: read the file (or pasted cells),
@@ -276,11 +276,7 @@
 
       var rent = Math.round(num(get("rent")));
       if (rent > 0) {
-        if (room.rent > 0 && room.rent !== rent) {
-          warn(warnings, "Room " + roomNo + " has more than one rent in the sheet (" +
-            money(room.rent) + " and " + money(rent) + "). Rent is per room here, so " +
-            money(room.rent) + " was kept.");
-        } else if (room.rent === 0) {
+        if (room.rent === 0) {
           room.rent = rent;
         }
       }
@@ -313,10 +309,13 @@
         joined = "";
       }
 
+      var bedCustomRent = (rent > 0 && room.rent > 0 && rent !== room.rent) ? rent : null;
+
       room.beds[idx] = {
         name: tenant,
         phone: norm(get("phone")).slice(0, 24),
         joined: joined,
+        rent: bedCustomRent,
         onNotice: map.notice !== undefined ? truthy(get("notice")) : false,
         paid: map.paid !== undefined ? truthy(get("paid")) : false
       };

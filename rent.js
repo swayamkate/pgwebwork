@@ -238,11 +238,13 @@
     if (!bed) { return; }
 
     viewing = { roomId: roomId, bedIndex: bedIndex };
+    var rentAmt = store().effectiveRent ? store().effectiveRent(room, bed) : (bed.rent || room.rent);
+    var customTag = (bed.rent != null && bed.rent > 0) ? ' <span class="tag-custom">custom</span>' : '';
 
     el("lg-who").innerHTML = esc(bed.name);
     el("lg-headline").innerHTML =
       'Room ' + esc(room.no) + ' \u00b7 Bed ' + esc(store().bedLabel(bedIndex, roomId)) +
-      ' \u00b7 ' + money(room.rent) + ' per month' +
+      ' \u00b7 ' + money(rentAmt) + ' per month' + customTag +
       (bed.joined ? ' \u00b7 joined ' + esc(bed.joined) : '') +
       (bed.collect ? ' \u00b7 collected on day ' + bed.collect : '');
 

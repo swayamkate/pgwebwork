@@ -1,9 +1,9 @@
-/* PG Manager — Google Sheets backup endpoint.
+/* PG Manager - Google Sheets backup endpoint.
 
-   Paste this into Extensions → Apps Script from the spreadsheet that should
+   Paste this into Extensions ? Apps Script from the spreadsheet that should
    hold the backups, set TOKEN below, then deploy it as a web app:
 
-     Deploy → New deployment → Web app
+     Deploy ? New deployment ? Web app
        Execute as:      Me
        Who has access:  Anyone
 
@@ -100,12 +100,13 @@ function push(account, data) {
     var room = rooms[r];
     for (var b = 0; b < room.beds.length; b++) {
       var bed = room.beds[b];
+      var bedRent = bed && bed.rent != null ? bed.rent : room.rent;
       beds++;
       if (bed) { tenants++; }
       rows.push(pad([
         room.no,
         room.floor,
-        room.rent,
+        bedRent,
         "ABCDEFGH".charAt(b) || String(b + 1),
         bed ? bed.name : "(vacant)",
         bed ? bed.phone : "",

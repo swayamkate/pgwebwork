@@ -1,11 +1,11 @@
-/* PG Manager — tenant profile.
+/* PG Manager - tenant profile.
 
    One panel per tenant: who they are, which bed they hold, when they moved in,
    when they are due to leave, and whatever note the owner keeps on them.
 
    The dialog builds itself and appends to the body, so index.html only has to
    load this file. Rent, notice and check-out reuse the actions app.js already
-   owns — this file just re-draws itself afterwards, because its click listener
+   owns - this file just re-draws itself afterwards, because its click listener
    is registered after app.js's and therefore runs second.
 */
 (function (global) {
@@ -160,6 +160,8 @@
     var tel = phone.replace(/[^0-9+]/g, "");
     var note = String(bed.note || "").trim();
     var ref = ' data-room="' + esc(room.id) + '" data-bed="' + current.bedIndex + '"';
+    var rentAmt = (global.PGStore && PGStore.effectiveRent) ? PGStore.effectiveRent(room, bed) : (bed.rent != null ? bed.rent : room.rent);
+    var rentSub = (bed.rent != null && bed.rent > 0) ? "custom rate per month" : "room default per month";
 
     return '' +
       '<div class="pf-head">' +
@@ -176,7 +178,7 @@
         cell("Room", "Room " + esc(room.no), floorSub(room)) +
         cell("Bed number", "Bed " + esc(bedLabel(current.bedIndex, current.roomId)), "") +
         cell("Phone", tel ? '<a href="tel:' + esc(tel) + '">' + esc(phone) + '</a>' : "\u2014", "") +
-        cell("Rent", money(room.rent), "per month") +
+        cell("Monthly rent", money(rentAmt), rentSub) +
         cell("Joining date", pretty(bed.joined), stayLabel(bed.joined)) +
         cell("Leaving date", bed.leaving ? pretty(bed.leaving) : "\u2014",
           leaveLabel(bed.leaving) || (bed.onNotice ? "on notice, no date set" : "no date set")) +
@@ -206,6 +208,7 @@
   function editView(found) {
     var bed = found.bed;
     var room = found.room;
+    var customRentVal = (bed.rent != null && bed.rent !== "") ? String(bed.rent) : "";
 
     return '' +
       '<form class="pf-form" id="pf-form">' +
@@ -216,16 +219,15 @@
           '<label class="field"><span>Phone</span>' +
             '<input id="pf-phone" maxlength="24" value="' + esc(bed.phone || "") +
             '" placeholder="+91 98765 43210" /></label>' +
+          '<label class="field"><span>Custom rent (\u20b9/mo) <i class="field-opt">optional</i></span>' +
+            '<input id="pf-rent" type="number" min="0" step="100" value="' + esc(customRentVal) + '" placeholder="Default: ' + money(room.rent) + '" /></label>' +
           '<label class="field"><span>Joining date</span>' +
             '<input id="pf-joined" type="date" value="' + esc(dateValue(bed.joined)) + '" /></label>' +
           '<label class="field"><span>Leaving date</span>' +
             '<input id="pf-leaving" type="date" value="' + esc(dateValue(bed.leaving)) + '" /></label>' +
           '<label class="field"><span>Collection day</span>' +
             '<input id="pf-collect" type="number" min="1" max="31" value="' + esc(bed.collect || "") + '" placeholder="e.g. 5" /></label>' +
-          '<label class="field"><span>Rent per month (\u20b9)</span>' +
-            '<input id="pf-rent" type="number" min="0" step="100" value="' + esc(room.rent) + '" /></label>' +
-          '<p class="hint span-2">Rent belongs to Room ' + esc(room.no) +
-            ', so a change here applies to every bed in that room. Months already marked paid keep the rent they were paid at.</p>' +
+          '<p class="hint span-2">Setting a custom rent applies only to ' + esc(bed.name) + '\u2019s bed. Leave blank to inherit Room ' + esc(room.no) + '\u2019s default of ' + money(room.rent) + '/mo.</p>' +
           '<label class="field span-2"><span>Note</span>' +
             '<textarea id="pf-note" maxlength="200" rows="3" ' +
             'placeholder="Deposit paid, food preference, parent\u2019s number\u2026">' +
@@ -287,12 +289,16 @@
       return node ? node.value : "";
     };
 
+    var rentRaw = val("pf-rent").trim();
+    var rentVal = rentRaw === "" ? null : Math.max(0, Number(rentRaw));
+
     var res = PGStore.updateTenant(current.roomId, current.bedIndex, {
       name: val("pf-name"),
       phone: val("pf-phone"),
       joined: val("pf-joined"),
       leaving: val("pf-leaving"),
       collect: val("pf-collect"),
+      rent: rentVal,
       note: val("pf-note")
     });
 
@@ -300,18 +306,6 @@
       error = res.error || "Could not save those changes.";
       render();
       return;
-    }
-
-    /* Rent is a property of the room, not the bed, so it saves through a
-       second call. An empty box means "leave it alone". */
-    var rent = val("pf-rent");
-    if (String(rent).trim() !== "" && Number(rent) !== Number(found.room.rent)) {
-      var priced = PGStore.updateRoom(current.roomId, { rent: rent });
-      if (!priced.ok) {
-        error = priced.error || "Could not save that rent.";
-        render();
-        return;
-      }
     }
 
     error = "";
@@ -349,8 +343,8 @@
       /* app.js has already applied the change and re-rendered the tabs. */
       render();
     } else if (act === "checkout") {
-      /* Gone means the bed was freed; still there means the confirm was cancelled. */
-      if (find(current)) { render(); } else { close(); }
+      /* Close profile modal and let app.js trigger the offboarding settlement dialog. */
+      close();
     }
   });
 
