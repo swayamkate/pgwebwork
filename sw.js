@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = "pg-manager-cache-v1";
+﻿const CACHE_NAME = "pg-manager-cache-v2";
 const ASSETS = [
   "./",
   "./index.html",
@@ -15,6 +15,7 @@ const ASSETS = [
   "./import.js",
   "./account.js",
   "./sheets.js",
+  "./supabase-storage.js",
   "./manifest.json",
   "./favicon.svg"
 ];
