@@ -1261,6 +1261,11 @@ function boot(session) {
     PGSheets.onStatus(renderBackup);
   }
 
+  /* Connect to Supabase data storage if available. */
+  if (window.SupabaseStorage) {
+    SupabaseStorage.init(accountId);
+  }
+
   el("greet").textContent = greeting() + ", " + String(name).split(" ")[0];
   el("avatar").textContent = initials(name);
   el("avatar").title = name;

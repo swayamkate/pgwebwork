@@ -45,6 +45,10 @@
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   }
 
+  function isArray(v) {
+    return Object.prototype.toString.call(v) === "[object Array]";
+  }
+
   function bedLabel(i) {
     return "ABCDEFGH".charAt(i) || String(i + 1);
   }
@@ -76,6 +80,169 @@
     if (typeof v === "boolean") { return v; }
     if (typeof v === "number") { return v > 0; }
     return YES.indexOf(key(v)) !== -1;
+  }
+
+  /* ---------- smart file type detection ---------- */
+
+  var IMAGE_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/tiff", "image/bmp"];
+  var PDF_TYPE = "application/pdf";
+
+  function isImageFile(file) {
+    var name = String(file.name || "").toLowerCase();
+    if (IMAGE_TYPES.indexOf(file.type) !== -1) { return true; }
+    return /\.(png|jpe?g|webp|tiff?|bmp)$/i.test(name);
+  }
+
+  function isPDFFile(file) {
+    var name = String(file.name || "").toLowerCase();
+    return file.type === PDF_TYPE || /\.pdf$/i.test(name);
+  }
+
+  function isJSONFile(file) {
+    var name = String(file.name || "").toLowerCase();
+    return file.type === "application/json" || /\.json$/i.test(name);
+  }
+
+  /* ---------- smart text extraction ---------- */
+
+  /* OCR: extract text from an image using Tesseract.js */
+  function extractFromImage(file) {
+    return new Promise(function (resolve, reject) {
+      if (!global.Tesseract) {
+        reject(new Error("The OCR library (Tesseract.js) did not load. Check your internet connection and try again."));
+        return;
+      }
+
+      fail("Reading text from image… this may take a moment.");
+
+      Tesseract.recognize(file, "eng", {
+        logger: function (m) {
+          if (m.status === "recognizing text" && m.progress) {
+            var pct = Math.round(m.progress * 100);
+            var p = el("imp-err");
+            if (p) { p.textContent = "OCR in progress… " + pct + "%"; p.hidden = false; }
+          }
+        }
+      }).then(function (result) {
+        var text = (result && result.data && result.data.text) || "";
+        if (!text.trim()) {
+          reject(new Error("No text could be read from this image. Make sure the text is clear and not too small."));
+          return;
+        }
+        resolve(text);
+      }).catch(function (err) {
+        reject(new Error("Could not read the image: " + (err.message || err)));
+      });
+    });
+  }
+
+  /* PDF: extract text using PDF.js */
+  function extractFromPDF(file) {
+    return new Promise(function (resolve, reject) {
+      if (!global.pdfjsLib) {
+        reject(new Error("The PDF reader (PDF.js) did not load. Check your internet connection and try again."));
+        return;
+      }
+
+      fail("Reading PDF…");
+
+      var reader = new FileReader();
+      reader.onerror = function () { reject(new Error("Could not open the PDF file.")); };
+      reader.onload = function () {
+        var data = new Uint8Array(reader.result);
+        global.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+
+        global.pdfjsLib.getDocument({ data: data }).promise.then(function (pdf) {
+          var textParts = [];
+          var pages = [];
+          for (var i = 1; i <= pdf.numPages; i++) { pages.push(i); }
+
+          pages.reduce(function (chain, pageNum) {
+            return chain.then(function () {
+              return pdf.getPage(pageNum).then(function (page) {
+                return page.getTextContent();
+              }).then(function (content) {
+                var pageText = content.items.map(function (item) { return item.str; }).join(" ");
+                textParts.push(pageText);
+              });
+            });
+          }, Promise.resolve()).then(function () {
+            var fullText = textParts.join("\n");
+            if (!fullText.trim()) {
+              reject(new Error("The PDF has no readable text. It may be a scanned image — try exporting it as an image instead."));
+              return;
+            }
+            resolve(fullText);
+          }).catch(function (err) {
+            reject(new Error("Could not read the PDF: " + (err.message || err)));
+          });
+        }).catch(function (err) {
+          reject(new Error("Could not open the PDF: " + (err.message || err)));
+        });
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  /* JSON: try to parse as a room/expense dataset */
+  function extractFromJSON(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onerror = function () { reject(new Error("Could not open the JSON file.")); };
+      reader.onload = function () {
+        try {
+          var data = JSON.parse(String(reader.result));
+          var text = jsonToSheetText(data);
+          if (!text.trim()) {
+            reject(new Error("The JSON file does not contain recognizable room or expense data."));
+            return;
+          }
+          resolve(text);
+        } catch (e) {
+          reject(new Error("That file is not valid JSON."));
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  /* Convert common JSON structures into tab-separated text the parser understands. */
+  function jsonToSheetText(data) {
+    if (isArray(data)) { return jsonArrayToText(data); }
+    if (data && typeof data === "object") {
+      /* Look for arrays inside the object (e.g. { rooms: [...] }). */
+      for (var k in data) {
+        if (isArray(data[k]) && data[k].length) { return jsonArrayToText(data[k]); }
+      }
+    }
+    return "";
+  }
+
+  function jsonArrayToText(arr) {
+    if (!arr.length) { return ""; }
+    var first = arr[0];
+    if (!first || typeof first !== "object") { return ""; }
+
+    var keys = Object.keys(first);
+    var header = keys.join("\t");
+    var rows = arr.map(function (obj) {
+      return keys.map(function (k) {
+        var v = obj[k];
+        return v == null ? "" : String(v);
+      }).join("\t");
+    });
+    return header + "\n" + rows.join("\n");
+  }
+
+  /* Show progress messages for slow operations. */
+  function showProgress(message) {
+    var p = el("imp-err");
+    if (p) { p.textContent = message; p.hidden = false; }
+  }
+
+  function hideProgress() {
+    var p = el("imp-err");
+    if (p) { p.hidden = true; }
   }
 
   /* Spreadsheets hand dates over as Date objects, serial numbers, or text in
@@ -169,19 +336,19 @@
   /* ---------- understanding the columns ---------- */
 
   var FIELDS = {
-    room:     { label: "Room",       aliases: ["room", "roomno", "roomnumber", "roomname", "rm", "rooms"] },
-    floor:    { label: "Floor",      aliases: ["floor", "flr", "level", "storey"] },
-    rent:     { label: "Rent",       aliases: ["rent", "rentperbed", "monthlyrent", "rentamount", "roomrent", "price", "fees", "fee"] },
-    bed:      { label: "Bed",        aliases: ["bed", "bedno", "bedletter", "bedname", "bednumber"] },
-    tenant:   { label: "Tenant",     aliases: ["tenant", "tenantname", "name", "fullname", "student", "occupant", "person", "boarder", "guest"] },
-    phone:    { label: "Phone",      aliases: ["phone", "phoneno", "phonenumber", "mobile", "mobileno", "contact", "contactno", "whatsapp"] },
-    joined:   { label: "Joined",     aliases: ["joined", "joiningdate", "joindate", "doj", "dateofjoining", "since", "checkin", "admissiondate"] },
-    notice:   { label: "On notice",  aliases: ["onnotice", "notice", "leaving", "vacating", "noticeperiod"] },
-    paid:     { label: "Paid",       aliases: ["paid", "rentpaid", "payment", "paymentstatus", "paidstatus", "status"] },
-    category: { label: "Category",   aliases: ["category", "head", "expensehead", "particulars", "item", "expense", "type"] },
-    amount:   { label: "Amount",     aliases: ["amount", "cost", "value", "spent", "expenseamount", "total"] },
-    date:     { label: "Date",       aliases: ["date", "expensedate", "paidon", "billdate"] },
-    note:     { label: "Note",       aliases: ["note", "notes", "remark", "remarks", "description", "details", "comment"] }
+    room:     { label: "Room",       aliases: ["room", "roomno", "roomnumber", "roomname", "rm", "rooms", "roomno.", "room_name", "room_number", "room_number", "roomid", "room_id", "flat", "flatno", "flatnumber", "unit", "unitno", "apartment", "apt", "houseno", "house_number", "pg_room"] },
+    floor:    { label: "Floor",      aliases: ["floor", "flr", "level", "storey", "story", "floor_no", "floorno", "floor_number"] },
+    rent:     { label: "Rent",       aliases: ["rent", "rentperbed", "monthlyrent", "rentamount", "roomrent", "price", "fees", "fee", "rent_per_bed", "monthly_rent", "rent_amount", "room_rent", "rental", "rentprice", "rent_fee", "amount_per_bed", "per_bed", "bed_rent", "bedrent", "monthly", "monthly_fee"] },
+    bed:      { label: "Bed",        aliases: ["bed", "bedno", "bedletter", "bedname", "bednumber", "bed_no", "bed_number", "bed_name", "bedid", "bed_id", "cot", "berth", "bunk"] },
+    tenant:   { label: "Tenant",     aliases: ["tenant", "tenantname", "name", "fullname", "student", "occupant", "person", "boarder", "guest", "tenant_name", "tenantname", "occupant_name", "guest_name", "resident", "member", "lodger", "payer", "customer", "client", "user", "tenant_id"] },
+    phone:    { label: "Phone",      aliases: ["phone", "phoneno", "phonenumber", "mobile", "mobileno", "contact", "contactno", "whatsapp", "phone_no", "phone_number", "mobile_no", "mobile_number", "contact_number", "tel", "telephone", "cell", "cellphone", "whatsapp_number", "whats_app", "mobilephone"] },
+    joined:   { label: "Joined",     aliases: ["joined", "joiningdate", "joindate", "doj", "dateofjoining", "since", "checkin", "admissiondate", "join_date", "joining_date", "check_in_date", "checkin_date", "start_date", "startdate", "move_in_date", "movedin", "admitted", "from_date", "fromdate", "entry_date", "entrydate"] },
+    notice:   { label: "On notice",  aliases: ["onnotice", "notice", "leaving", "vacating", "noticeperiod", "on_notice", "notice_period", "leaving_date", "vacating_date", "notice_flag", "is_leaving", "is_vacating", "departure"] },
+    paid:     { label: "Paid",       aliases: ["paid", "rentpaid", "payment", "paymentstatus", "paidstatus", "status", "paid_status", "rent_paid", "payment_status", "settlement", "settled", "cleared", "receipt", "collected", "recovered", "payment_made", "rent_received"] },
+    category: { label: "Category",   aliases: ["category", "head", "expensehead", "particulars", "item", "expense", "type", "expense_category", "expense_head", "expense_type", "spending_category", "cost_head", "bill_category", "ledger_head", "group", "classification"] },
+    amount:   { label: "Amount",     aliases: ["amount", "cost", "value", "spent", "expenseamount", "total", "expense_amount", "cost_amount", "spending", "expenditure", "bill_amount", "bill_total", "sum", "price_amount", "payable", "charges", "bill", "billing"] },
+    date:     { label: "Date",       aliases: ["date", "expensedate", "paidon", "billdate", "expense_date", "bill_date", "paid_date", "payment_date", "transaction_date", "txn_date", "trans_date", "entry_date", "record_date", "when", "on_date"] },
+    note:     { label: "Note",       aliases: ["note", "notes", "remark", "remarks", "description", "details", "comment", "comments", "memo", "narration", "narrative", "info", "information", "extra", "extra_info", "additional", "remarks_text", "description_text"] }
   };
 
   var BED_FIELDS = ["room", "floor", "rent", "bed", "tenant", "phone", "joined", "notice", "paid"];
@@ -503,12 +670,26 @@
       mode === "replace" ? "The previous spending log was replaced" : "Added to the spending log");
   }
 
+  /* ---------- Supabase sync ---------- */
+
+  /* After an import, push the full state to Supabase so data lives in the
+     database, not just the browser. Non-blocking: the UI is updated first;
+     the sync runs in the background. */
+  function syncToSupabase(state) {
+    if (typeof SupabaseStorage === "undefined" || !SupabaseStorage.isAvailable()) { return; }
+    SupabaseStorage.save(state).catch(function (err) {
+      console.warn("PG Import: Supabase sync failed:", err);
+    });
+  }
+
   /* Record the import in the activity feed, then hand the whole thing to the
      store, which validates every field on the way in. */
   function finish(next, text, meta) {
     next.activity = [{ type: "in", text: text, meta: meta, at: new Date().toISOString() }]
       .concat(next.activity || []).slice(0, 20);
     PGStore.replaceAll(next);
+    /* Push to Supabase in the background so data lives in the database. */
+    syncToSupabase(next);
     return { ok: true, text: text };
   }
 
@@ -729,37 +910,76 @@
 
   function readFile(file) {
     var name = String(file.name || "").toLowerCase();
+
+    /* Smart routing: detect the file type and use the best extraction method. */
+
+    /* Images → OCR */
+    if (isImageFile(file)) {
+      extractFromImage(file).then(function (text) {
+        hideProgress();
+        analyse(parseText(text), file.name);
+      }).catch(function (err) {
+        fail(err.message || "Could not read the image.");
+      });
+      return;
+    }
+
+    /* PDF → text extraction */
+    if (isPDFFile(file)) {
+      extractFromPDF(file).then(function (text) {
+        hideProgress();
+        analyse(parseText(text), file.name);
+      }).catch(function (err) {
+        fail(err.message || "Could not read the PDF.");
+      });
+      return;
+    }
+
+    /* JSON → convert to tab-separated text */
+    if (isJSONFile(file)) {
+      extractFromJSON(file).then(function (text) {
+        hideProgress();
+        analyse(parseText(text), file.name);
+      }).catch(function (err) {
+        fail(err.message || "Could not read the JSON file.");
+      });
+      return;
+    }
+
+    /* Excel (.xlsx, .xls) → SheetJS */
     var isExcel = /\.xlsx?$/.test(name);
-    var reader = new FileReader();
-
-    reader.onerror = function () { fail("That file could not be opened."); };
-
-    reader.onload = function () {
-      try {
-        if (!isExcel) {
-          analyse(parseText(String(reader.result)), file.name);
-          return;
+    if (isExcel) {
+      var reader = new FileReader();
+      reader.onerror = function () { fail("That file could not be opened."); };
+      reader.onload = function () {
+        try {
+          if (!global.XLSX) {
+            fail("The Excel reader did not load, so .xlsx cannot be opened right now. " +
+              "In Excel or Google Sheets use File \u2192 Download \u2192 CSV, or just copy the cells and paste them below.");
+            return;
+          }
+          var wb = XLSX.read(new Uint8Array(reader.result), { type: "array", cellDates: true });
+          var pick = bestSheet(wb);
+          if (!pick) {
+            fail("That workbook has no readable sheets.");
+            return;
+          }
+          analyse(pick.rows, pick.name);
+        } catch (err) {
+          fail("That file could not be read as a spreadsheet. If it is an .xls from an old Excel, save it as .xlsx or CSV first.");
         }
+      };
+      reader.readAsArrayBuffer(file);
+      return;
+    }
 
-        if (!global.XLSX) {
-          fail("The Excel reader did not load, so .xlsx cannot be opened right now. " +
-            "In Excel or Google Sheets use File \u2192 Download \u2192 CSV, or just copy the cells and paste them below.");
-          return;
-        }
-
-        var wb = XLSX.read(new Uint8Array(reader.result), { type: "array", cellDates: true });
-        var pick = bestSheet(wb);
-        if (!pick) {
-          fail("That workbook has no readable sheets.");
-          return;
-        }
-        analyse(pick.rows, pick.name);
-      } catch (err) {
-        fail("That file could not be read as a spreadsheet. If it is an .xls from an old Excel, save it as .xlsx or CSV first.");
-      }
+    /* CSV, TSV, TXT → plain text parser */
+    var reader2 = new FileReader();
+    reader2.onerror = function () { fail("That file could not be opened."); };
+    reader2.onload = function () {
+      analyse(parseText(String(reader2.result)), file.name);
     };
-
-    if (isExcel) { reader.readAsArrayBuffer(file); } else { reader.readAsText(file); }
+    reader2.readAsText(file);
   }
 
   /* A workbook often has several tabs; take the one whose header we understand

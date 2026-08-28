@@ -18,7 +18,11 @@
 <!-- Reads .xlsx in the browser. Deferred because it is only needed once the
      owner actually opens the import panel; CSV and pasted cells never need it. -->
 <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- Smart import: OCR for images and PDF text extraction -->
+<script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="config.js?v=9"></script>
+<script src="supabase-storage.js?v=9"></script>
 <script src="auth.js?v=9"></script>
 <script src="store.js?v=9"></script>
 <script src="sheets.js?v=9"></script>
@@ -419,8 +423,8 @@
 
       <label class="imp-drop" for="imp-file">
         <b>Choose a file, or drop one here</b>
-        <span>Excel .xlsx and .xls, or .csv</span>
-        <input type="file" id="imp-file" accept=".csv,.tsv,.txt,.xlsx,.xls" />
+        <span>Excel, CSV, JSON, PDF, or images (PNG, JPG) — we read them all</span>
+        <input type="file" id="imp-file" accept=".csv,.tsv,.txt,.xlsx,.xls,.json,.pdf,.png,.jpg,.jpeg,.webp,.tiff,.bmp" />
       </label>
 
       <p class="imp-or"><span>or paste straight from Google Sheets</span></p>
