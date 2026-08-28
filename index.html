@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>PG Manager — Beds, Tenants &amp; Rent</title>
 <meta name="description" content="Owner dashboard to manage PG beds, tenants and rent collection." />
-<meta name="theme-color" content="#0C0E14" />
+<meta name="theme-color" content="#000000" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <link rel="manifest" href="manifest.json" />
 <script>try{var t=localStorage.getItem("pgTheme");if(t){document.documentElement.dataset.theme=t;}}catch(e){}</script>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%234F46E5'/%3E%3Cg fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 18v-8'/%3E%3Cpath d='M4 14h16v4'/%3E%3Cpath d='M20 14v-1.5a2 2 0 0 0-2-2h-7V14'/%3E%3C/g%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%232563EB'/%3E%3Cg fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 18v-8'/%3E%3Cpath d='M4 14h16v4'/%3E%3Cpath d='M20 14v-1.5a2 2 0 0 0-2-2h-7V14'/%3E%3C/g%3E%3C/svg%3E" />
 <link rel="stylesheet" href="styles.css?v=9" />
 <link rel="stylesheet" href="manage.css?v=9" />
 <style>html.auth-pending body{visibility:hidden}</style>
@@ -350,7 +350,7 @@
 
 <footer class="foot">
   <div class="wrap foot-in">
-    <span>PG Manager · build v0.3</span>
+    <span>PG Manager · v1.0</span>
     <span class="muted-sm">Your data is saved in this browser, per login</span>
   </div>
 </footer>
@@ -473,18 +473,18 @@
           <div class="imp-example-grid">
             <div class="imp-example-card">
               <b>Rooms & Tenants</b>
-              <pre class="imp-example-code">Room\tBed\tTenant\tPhone\tJoined\tRent\tPaid\tNote
-101\tA\tSakshi\t9876543210\t2025-01-15\t5000\tYes\t
-101\tB\tAmruta\t9876543211\t2025-02-01\t5000\tYes\t
-102\tA\tPriya\t9876543212\t2025-03-10\t5500\tNo\tNotice period
-102\tB\t\t\t\t5500\t\tVacant</pre>
+              <pre class="imp-example-code">Room  Bed  Tenant       Phone        Joined       Rent  Paid  Note
+101   A    Sakshi       9876543210   2025-01-15   5000  Yes
+101   B    Amruta       9876543211   2025-02-01   5000  Yes
+102   A    Priya        9876543212   2025-03-10   5500  No   Notice period
+102   B    (vacant)     —            —            5500       </pre>
             </div>
             <div class="imp-example-card">
               <b>Expenses</b>
-              <pre class="imp-example-code">Date\tCategory\tAmount\tNote
-2026-08-01\tElectricity\t8500\tAugust bill
-2026-08-05\tInternet\t1200\tMonthly fiber
-2026-08-10\tStaff salary\t6000\tCleaning staff</pre>
+              <pre class="imp-example-code">Date        Category       Amount  Note
+2026-08-01   Electricity    8500    August bill
+2026-08-05   Internet       1200    Monthly fiber
+2026-08-10   Staff salary   6000    Cleaning staff</pre>
             </div>
           </div>
         </details>
