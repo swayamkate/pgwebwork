@@ -1,0 +1,401 @@
+// PG Manager — Complete Database Schema
+//
+// Run: npx prisma db push  (or npx prisma migrate dev)
+// This schema covers tenants, rooms, beds, payments, bank imports,
+// expenses, receipts, notifications, audit logs, and settings.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users & Auth ──────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  passwordHash  String    @map("password_hash")
+  role          Role      @default(STAFF)
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  payments       Payment[]
+  expenses       Expense[]
+  auditLogs      AuditLog[]
+  sessions       Session[]
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  ACCOUNTANT
+  STAFF
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  token        String   @unique
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// ─── Rooms & Beds ──────────────────────────────────────────────────────
+
+model Room {
+  id        String  @id @default(cuid())
+  number    String  @unique
+  floor     Int     @default(0)
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  beds Bed[]
+
+  @@map("rooms")
+}
+
+model Bed {
+  id        String  @id @default(cuid())
+  number    String
+  roomId    String  @map("room_id")
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  room            Room              @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  assignments     TenantAssignment[]
+  rentRecords     RentRecord[]
+
+  @@unique([roomId, number])
+  @@map("beds")
+}
+
+// ─── Tenants ───────────────────────────────────────────────────────────
+
+model Tenant {
+  id              String   @id @default(cuid())
+  name            String
+  phone           String?
+  email           String?
+  emergencyContact String?  @map("emergency_contact")
+  idType          String?  @map("id_type")
+  idNumber        String?  @map("id_number")
+  notes           String?
+  status          TenantStatus @default(ACTIVE)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  assignments     TenantAssignment[]
+  payments        Payment[]
+  aliases         TenantAlias[]
+  rentRecords     RentRecord[]
+
+  @@map("tenants")
+}
+
+enum TenantStatus {
+  ACTIVE
+  NOTICE_PERIOD
+  CHECKED_OUT
+  INACTIVE
+}
+
+model TenantAssignment {
+  id           String    @id @default(cuid())
+  tenantId     String    @map("tenant_id")
+  bedId        String    @map("bed_id")
+  monthlyRent  Decimal   @map("monthly_rent") @db.Decimal(10, 2)
+  securityDeposit Decimal? @map("security_deposit") @db.Decimal(10, 2)
+  joiningDate  DateTime  @map("joining_date")
+  checkoutDate DateTime? @map("checkout_date")
+  dueDate      Int       @default(5) @map("due_date")
+  isActive     Boolean   @default(true) @map("is_active")
+  notes        String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bed          Bed       @relation(fields: [bedId], references: [id], onDelete: Cascade)
+
+  rentRecords  RentRecord[]
+
+  @@map("tenant_assignments")
+}
+
+model TenantAlias {
+  id        String  @id @default(cuid())
+  tenantId  String  @map("tenant_id")
+  alias     String
+  source    String? // "upi", "bank", "manual"
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, alias])
+  @@map("tenant_aliases")
+}
+
+// ─── Rent Records ──────────────────────────────────────────────────────
+
+model RentRecord {
+  id             String     @id @default(cuid())
+  assignmentId   String     @map("assignment_id")
+  tenantId       String     @map("tenant_id")
+  bedId          String     @map("bed_id")
+  month          String     // "YYYY-MM"
+  rentDue        Decimal    @map("rent_due") @db.Decimal(10, 2)
+  amountPaid     Decimal    @default(0) @map("amount_paid") @db.Decimal(10, 2)
+  status         RentStatus @default(DUE)
+  dueDate        DateTime?  @map("due_date")
+  notes          String?
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  assignment     TenantAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bed            Bed              @relation(fields: [bedId], references: [id], onDelete: Cascade)
+  payments       Payment[]
+
+  @@unique([assignmentId, month])
+  @@map("rent_records")
+}
+
+enum RentStatus {
+  PAID
+  PARTIAL
+  DUE
+  OVERDUE
+  ADVANCE
+}
+
+// ─── Payments ──────────────────────────────────────────────────────────
+
+model Payment {
+  id               String        @id @default(cuid())
+  tenantId         String        @map("tenant_id")
+  amount           Decimal       @db.Decimal(10, 2)
+  date             DateTime      @default(now())
+  method           PaymentMethod @default(BANK_TRANSFER)
+  purpose          String?
+  rentMonth        String?       @map("rent_month") // "YYYY-MM"
+  transactionId    String?       @map("transaction_id")
+  bankReference    String?       @map("bank_reference")
+  receiptNumber    String?       @map("receipt_number")
+  notes            String?
+  isReversed       Boolean       @default(false) @map("is_reversed")
+  reversedAt       DateTime?     @map("reversed_at")
+  createdBy        String?       @map("created_by")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  rentRecord       RentRecord?   @relation(fields: [rentMonth], references: [month])
+  user             User?         @relation(fields: [createdBy], references: [id])
+  bankTransaction  BankTransaction? @relation(fields: [bankTransactionId], references: [id])
+  receipt          Receipt?
+
+  bankTransactionId String?     @map("bank_transaction_id")
+
+  @@index([tenantId])
+  @@index([rentMonth])
+  @@index([date])
+  @@map("payments")
+}
+
+enum PaymentMethod {
+  UPI
+  BANK_TRANSFER
+  CASH
+  CARD
+  CHEQUE
+  OTHER
+}
+
+// ─── Bank Statements ───────────────────────────────────────────────────
+
+model BankTransaction {
+  id                  String   @id @default(cuid())
+  importBatchId       String   @map("import_batch_id")
+  slNo                Int?     @map("sl_no")
+  valueDate           DateTime @map("value_date")
+  originalDescription String   @map("original_description")
+  parsedDescription   String?  @map("parsed_description")
+  parsedName          String?  @map("parsed_name")
+  amount              Decimal  @db.Decimal(10, 2)
+  type                TxnType
+  balance             Decimal? @db.Decimal(12, 2)
+  reference           String?
+  isDuplicate         Boolean  @default(false) @map("is_duplicate")
+  duplicateOfId       String?  @map("duplicate_of_id")
+  status              TxnStatus @default(UNMATCHED)
+  confidence          Decimal? @db.Decimal(5, 2) // 0-100
+  notes               String?
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  importBatch         ImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  duplicateOf         BankTransaction? @relation("Duplicates", fields: [duplicateOfId], references: [id])
+  duplicates          BankTransaction[] @relation("Duplicates")
+  payment             Payment?
+
+  @@index([importBatchId])
+  @@index([reference])
+  @@index([amount])
+  @@index([status])
+  @@map("bank_transactions")
+}
+
+enum TxnType {
+  CREDIT
+  DEBIT
+}
+
+enum TxnStatus {
+  UNMATCHED
+  MATCHED
+  MANUAL_MATCHED
+  IGNORED
+  DUPLICATE
+}
+
+model ImportBatch {
+  id            String   @id @default(cuid())
+  fileName      String   @map("file_name")
+  fileType      String   @map("file_type")
+  rowCount      Int      @default(0) @map("row_count")
+  matchedCount  Int      @default(0) @map("matched_count")
+  status        String   @default("pending") // pending, processing, completed, failed
+  importedBy    String?  @map("imported_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+  completedAt   DateTime? @map("completed_at")
+
+  transactions  BankTransaction[]
+
+  @@map("import_batches")
+}
+
+// ─── Expenses ──────────────────────────────────────────────────────────
+
+model Expense {
+  id            String          @id @default(cuid())
+  date          DateTime        @default(now())
+  category      ExpenseCategory @default(OTHER)
+  description   String
+  amount        Decimal         @db.Decimal(10, 2)
+  method        PaymentMethod   @default(BANK_TRANSFER)
+  vendor        String?
+  reference     String?
+  notes         String?
+  attachmentUrl String?         @map("attachment_url")
+  createdBy     String?         @map("created_by")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  user          User?           @relation(fields: [createdBy], references: [id])
+
+  @@index([date])
+  @@index([category])
+  @@map("expenses")
+}
+
+enum ExpenseCategory {
+  ELECTRICITY
+  WATER
+  INTERNET
+  MAINTENANCE
+  CLEANING
+  REPAIRS
+  SALARY
+  RENT
+  SUPPLIES
+  OTHER
+}
+
+// ─── Receipts ──────────────────────────────────────────────────────────
+
+model Receipt {
+  id              String   @id @default(cuid())
+  receiptNumber   String   @unique @map("receipt_number")
+  paymentId       String   @unique @map("payment_id")
+  tenantName      String   @map("tenant_name")
+  roomNumber      String   @map("room_number")
+  bedNumber       String   @map("bed_number")
+  amount          Decimal  @db.Decimal(10, 2)
+  paymentDate     DateTime @map("payment_date")
+  paymentMethod   String   @map("payment_method")
+  rentMonth       String   @map("rent_month")
+  previousBalance Decimal  @default(0) @map("previous_balance") @db.Decimal(10, 2)
+  amountPaid      Decimal  @map("amount_paid") @db.Decimal(10, 2)
+  remainingBalance Decimal @default(0) @map("remaining_balance") @db.Decimal(10, 2)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  payment         Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@map("receipts")
+}
+
+// ─── Notifications ─────────────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(cuid())
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  isRead    Boolean          @default(false) @map("is_read")
+  entityType String?         @map("entity_type")
+  entityId  String?          @map("entity_id")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  URGENT
+  SUCCESS
+}
+
+// ─── Audit Log ─────────────────────────────────────────────────────────
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?  @map("user_id")
+  action      String   // "CREATE", "UPDATE", "DELETE", "IMPORT", "MATCH"
+  entity      String   // "tenant", "payment", "room", etc.
+  entityId    String?  @map("entity_id")
+  previousValue String? @map("previous_value") @db.Text
+  newValue    String?  @map("new_value") @db.Text
+  ipAddress   String?  @map("ip_address")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User?    @relation(fields: [userId], references: [id])
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ─── Settings ──────────────────────────────────────────────────────────
+
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String @db.Text
+
+  @@map("settings")
+}
