@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   ArrowLeft, Phone, Mail, Calendar, IndianRupee, CreditCard,
-  CheckCircle2, Clock, AlertTriangle, Minus, History, Receipt,
-  MapPin, User, Edit2, LogOut, Tag, ChevronDown, ChevronRight,
+  CheckCircle2, Clock, AlertTriangle, Minus, History, Tag, MoreHorizontal,
+  User, MapPin, ChevronDown,
 } from "lucide-react";
+import { DropdownMenu, Collapsible } from "@/components/ui/dropdown-menu";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
@@ -58,11 +59,7 @@ export default function TenantHistoryPage() {
 
   useEffect(() => {
     if (id) {
-      fetch(`/api/tenants/${id}`)
-        .then((r) => r.json())
-        .then(setTenant)
-        .catch(console.error)
-        .finally(() => setLoading(false));
+      fetch(`/api/tenants/${id}`).then((r) => r.json()).then(setTenant).catch(console.error).finally(() => setLoading(false));
     }
   }, [id]);
 
@@ -80,9 +77,7 @@ export default function TenantHistoryPage() {
     return (
       <div className="text-center py-20">
         <p className="text-muted-foreground">Tenant not found</p>
-        <button onClick={() => router.push("/tenants")} className="mt-4 text-primary text-sm hover:underline">
-          ← Back to tenants
-        </button>
+        <button onClick={() => router.push("/tenants")} className="mt-4 text-primary text-sm hover:underline">← Back to tenants</button>
       </div>
     );
   }
@@ -95,79 +90,67 @@ export default function TenantHistoryPage() {
   const tabs = [
     { id: "overview", label: "Overview", icon: User },
     { id: "payments", label: "Payments", icon: CreditCard, count: tenant.payments?.length || 0 },
-    { id: "rent", label: "Rent Ledger", icon: IndianRupee },
+    { id: "rent", label: "Rent", icon: IndianRupee },
     { id: "activity", label: "Activity", icon: History, count: tenant._auditLogs?.length || 0 },
   ] as const;
 
   return (
-    <div className="space-y-6 max-w-[1200px]">
-      {/* Back button */}
-      <button onClick={() => router.push("/tenants")}
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="w-4 h-4" /> Back to tenants
-      </button>
+    <div className="space-y-5 max-w-[1200px]">
+      {/* ─── Back + Actions ─── */}
+      <div className="flex items-center justify-between">
+        <button onClick={() => router.push("/tenants")}
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Tenants
+        </button>
+        <DropdownMenu
+          align="right"
+          trigger={
+            <button className="inline-flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm hover:bg-muted transition-colors">
+              <MoreHorizontal className="w-4 h-4" /> Actions
+            </button>
+          }
+          items={[
+            { label: "Record Payment", icon: <CreditCard className="w-4 h-4" />, onClick: () => router.push("/payments") },
+            { label: "View Receipts", icon: <CheckCircle2 className="w-4 h-4" />, onClick: () => router.push("/receipts") },
+            { divider: true, label: "", onClick: () => {} },
+            { label: "Edit Tenant", icon: <User className="w-4 h-4" />, onClick: () => {} },
+            ...(tenant.status === "ACTIVE" ? [{ label: "Move to Another Bed", icon: <MapPin className="w-4 h-4" />, onClick: () => router.push("/rooms") }] : []),
+            ...(tenant.status === "ACTIVE" ? [{ label: "Check Out", icon: <AlertTriangle className="w-4 h-4" />, onClick: () => {}, danger: true }] : []),
+          ]}
+        />
+      </div>
 
-      {/* ─── Tenant Header ──────────────────────────────────────── */}
-      <div className="bg-card border rounded-xl p-6">
-        <div className="flex flex-col sm:flex-row sm:items-start gap-5">
-          {/* Avatar */}
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-xl font-bold text-primary shrink-0">
+      {/* ─── Tenant Header (compact) ─── */}
+      <div className="bg-card border rounded-xl p-5">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-lg font-bold text-primary shrink-0">
             {tenant.name.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase()}
           </div>
-
-          <div className="flex-1">
-            <div className="flex items-start justify-between flex-wrap gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold">{tenant.name}</h1>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.bg} ${statusConfig.color}`}>
-                    {statusConfig.label}
-                  </span>
-                </div>
-                <div className="flex flex-wrap items-center gap-3 mt-1.5 text-sm text-muted-foreground">
-                  {currentAssignment && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5" />
-                      Room {currentAssignment.bed.room.number} · Bed {currentAssignment.bed.number}
-                    </span>
-                  )}
-                  {tenant.phone && (
-                    <span className="flex items-center gap-1">
-                      <Phone className="w-3.5 h-3.5" /> {tenant.phone}
-                    </span>
-                  )}
-                  {tenant.email && (
-                    <span className="flex items-center gap-1">
-                      <Mail className="w-3.5 h-3.5" /> {tenant.email}
-                    </span>
-                  )}
-                  {currentAssignment?.joiningDate && (
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" /> Joined {fmtDate(currentAssignment.joiningDate)} · {daysSince(currentAssignment.joiningDate)}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <button onClick={() => router.push("/payments")}
-                  className="px-3 py-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs font-medium hover:bg-emerald-500/20">
-                  + Record Payment
-                </button>
-                <button onClick={() => router.push("/receipts")}
-                  className="px-3 py-1.5 border rounded-lg text-xs font-medium hover:bg-muted">
-                  Receipts
-                </button>
-              </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-lg font-bold">{tenant.name}</h1>
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.bg} ${statusConfig.color}`}>
+                {statusConfig.label}
+              </span>
             </div>
-
-            {/* Aliases */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-muted-foreground">
+              {currentAssignment && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-3 h-3" /> Room {currentAssignment.bed.room.number} · Bed {currentAssignment.bed.number}
+                </span>
+              )}
+              {tenant.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {tenant.phone}</span>}
+              {tenant.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {tenant.email}</span>}
+              {currentAssignment?.joiningDate && (
+                <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {daysSince(currentAssignment.joiningDate)}</span>
+              )}
+            </div>
+            {/* Aliases - only show if present, compact */}
             {tenant.aliases?.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-3">
+              <div className="flex flex-wrap gap-1 mt-2">
                 {tenant.aliases.map((a: any) => (
-                  <span key={a.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted text-xs text-muted-foreground">
-                    <Tag className="w-3 h-3" /> {a.alias}
-                    {a.source && <span className="text-[10px] opacity-50">({a.source})</span>}
+                  <span key={a.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-[10px] text-muted-foreground">
+                    <Tag className="w-2.5 h-2.5" /> {a.alias}
                   </span>
                 ))}
               </div>
@@ -176,56 +159,47 @@ export default function TenantHistoryPage() {
         </div>
       </div>
 
-      {/* ─── Financial Summary Cards ──────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <div className="bg-card border rounded-xl p-4">
-          <p className="text-xs text-muted-foreground">Monthly Rent</p>
-          <p className="text-xl font-bold mt-1">{fmt(summary.monthlyRent || 0)}</p>
-        </div>
-        <div className="bg-card border rounded-xl p-4">
-          <p className="text-xs text-muted-foreground">Total Paid</p>
-          <p className="text-xl font-bold mt-1 text-emerald-500">{fmt(summary.totalPaid || 0)}</p>
-          <p className="text-[10px] text-muted-foreground">{summary.totalPayments || 0} payments</p>
-        </div>
-        <div className="bg-card border rounded-xl p-4">
-          <p className="text-xs text-muted-foreground">Outstanding</p>
-          <p className={`text-xl font-bold mt-1 ${(summary.outstanding || 0) > 0 ? "text-red-500" : "text-emerald-500"}`}>
-            {fmt(summary.outstanding || 0)}
-          </p>
-        </div>
-        <div className="bg-card border rounded-xl p-4">
-          <p className="text-xs text-muted-foreground">Months Paid</p>
-          <p className="text-xl font-bold mt-1">{summary.paidMonths || 0}/{summary.totalMonths || 0}</p>
-        </div>
-        <div className="bg-card border rounded-xl p-4">
-          <p className="text-xs text-muted-foreground">Current Status</p>
-          {currentRR ? (
-            <div className="mt-1">
-              {(() => {
-                const rs = RENT_STATUS[currentRR.status] || RENT_STATUS.DUE;
-                return (
-                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-sm font-medium ${rs.badge}`}>
-                    <rs.icon className="w-4 h-4" /> {currentRR.status}
-                  </span>
-                );
-              })()}
+      {/* ─── Financial Summary (compact, collapsible) ─── */}
+      <Collapsible title="Financial Summary" badge={currentRR ? currentRR.status : undefined}>
+        <div className="p-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="text-center p-3 bg-muted/50 rounded-lg">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Rent</p>
+              <p className="text-lg font-bold mt-0.5">{fmt(summary.monthlyRent || 0)}</p>
             </div>
-          ) : (
-            <p className="text-xl font-bold mt-1 text-muted-foreground">—</p>
-          )}
+            <div className="text-center p-3 bg-muted/50 rounded-lg">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Paid</p>
+              <p className="text-lg font-bold mt-0.5 text-emerald-500">{fmt(summary.totalPaid || 0)}</p>
+              <p className="text-[10px] text-muted-foreground">{summary.totalPayments || 0}×</p>
+            </div>
+            <div className="text-center p-3 bg-muted/50 rounded-lg">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Outstanding</p>
+              <p className={`text-lg font-bold mt-0.5 ${(summary.outstanding || 0) > 0 ? "text-red-500" : "text-emerald-500"}`}>
+                {fmt(summary.outstanding || 0)}
+              </p>
+            </div>
+            <div className="text-center p-3 bg-muted/50 rounded-lg">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Months</p>
+              <p className="text-lg font-bold mt-0.5">{summary.paidMonths || 0}/{summary.totalMonths || 0}</p>
+            </div>
+            <div className="text-center p-3 bg-muted/50 rounded-lg">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Deposit</p>
+              <p className="text-lg font-bold mt-0.5">
+                {currentAssignment?.securityDeposit ? fmt(Number(currentAssignment.securityDeposit)) : "—"}
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      </Collapsible>
 
-      {/* ─── Tabs ──────────────────────────────────────────────── */}
+      {/* ─── Tabs ─── */}
       <div className="flex gap-1 border-b">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === tab.id
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+              activeTab === tab.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             <tab.icon className="w-4 h-4" />
@@ -237,212 +211,179 @@ export default function TenantHistoryPage() {
         ))}
       </div>
 
-      {/* ─── Tab Content ──────────────────────────────────────── */}
-
-      {/* OVERVIEW */}
+      {/* ─── OVERVIEW ─── */}
       {activeTab === "overview" && (
         <div className="space-y-4">
-          {/* Personal details */}
-          <div className="bg-card border rounded-xl p-5">
-            <h3 className="font-semibold text-sm mb-3">Personal Details</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs text-muted-foreground">Full Name</label>
-                <p className="text-sm font-medium">{tenant.name}</p>
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Phone</label>
-                <p className="text-sm font-medium">{tenant.phone || "—"}</p>
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Email</label>
-                <p className="text-sm font-medium">{tenant.email || "—"}</p>
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Emergency Contact</label>
-                <p className="text-sm font-medium">{tenant.emergencyContact || "—"}</p>
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">ID Type</label>
-                <p className="text-sm font-medium">{tenant.idType || "—"}</p>
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">ID Number</label>
-                <p className="text-sm font-medium">{tenant.idNumber || "—"}</p>
-              </div>
-              {currentAssignment && (
-                <>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Security Deposit</label>
-                    <p className="text-sm font-medium">{currentAssignment.securityDeposit ? fmt(Number(currentAssignment.securityDeposit)) : "—"}</p>
+          <Collapsible title="Personal Details" defaultOpen>
+            <div className="p-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  ["Full Name", tenant.name],
+                  ["Phone", tenant.phone],
+                  ["Email", tenant.email],
+                  ["Emergency Contact", tenant.emergencyContact],
+                  ["ID Type", tenant.idType],
+                  ["ID Number", tenant.idNumber],
+                  ["Due Date", currentAssignment?.dueDate ? `Every ${currentAssignment.dueDate}${getOrdinal(currentAssignment.dueDate)}` : null],
+                ].filter(([, v]) => v).map(([label, value]) => (
+                  <div key={label as string}>
+                    <label className="text-xs text-muted-foreground">{label}</label>
+                    <p className="text-sm font-medium">{value}</p>
                   </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Rent Due Date</label>
-                    <p className="text-sm font-medium">{currentAssignment.dueDate ? `Every ${currentAssignment.dueDate}${getOrdinal(currentAssignment.dueDate)}` : "—"}</p>
-                  </div>
-                </>
+                ))}
+              </div>
+              {tenant.notes && (
+                <div className="mt-4 pt-3 border-t">
+                  <label className="text-xs text-muted-foreground">Notes</label>
+                  <p className="text-sm mt-1">{tenant.notes}</p>
+                </div>
               )}
             </div>
-            {tenant.notes && (
-              <div className="mt-4 pt-3 border-t">
-                <label className="text-xs text-muted-foreground">Notes</label>
-                <p className="text-sm mt-1">{tenant.notes}</p>
-              </div>
-            )}
-          </div>
+          </Collapsible>
 
-          {/* Recent payments (top 5) */}
-          <div className="bg-card border rounded-xl overflow-hidden">
-            <div className="px-5 py-3 border-b flex items-center justify-between">
-              <h3 className="font-semibold text-sm">Recent Payments</h3>
-              <button onClick={() => setActiveTab("payments")} className="text-xs text-primary hover:underline">View all →</button>
-            </div>
+          <Collapsible title="Recent Payments" count={Math.min(tenant.payments?.length || 0, 5)}>
             {tenant.payments?.length > 0 ? (
               <div className="divide-y">
                 {tenant.payments.slice(0, 5).map((p: any) => (
-                  <div key={p.id} className="flex items-center gap-3 px-5 py-3">
-                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <div key={p.id} className="flex items-center gap-3 px-5 py-2.5">
+                    <div className="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{fmt(Number(p.amount))}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {p.rentMonth} · {p.method?.replace("_", " ")} · {fmtDate(p.date)}
-                      </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{fmt(Number(p.amount))}</span>
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${PAYMENT_METHODS[p.method] || PAYMENT_METHODS.OTHER}`}>
+                          {p.method?.replace("_", " ")}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{p.rentMonth} · {fmtDate(p.date)}</p>
                     </div>
-                    {p.receiptNumber && (
-                      <span className="text-xs text-muted-foreground font-mono">{p.receiptNumber}</span>
-                    )}
+                    {p.receiptNumber && <span className="text-[10px] text-muted-foreground font-mono shrink-0">{p.receiptNumber}</span>}
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="p-6 text-center text-sm text-muted-foreground">No payments recorded yet</div>
+              <div className="p-6 text-center text-sm text-muted-foreground">No payments yet</div>
             )}
-          </div>
+          </Collapsible>
         </div>
       )}
 
-      {/* PAYMENTS */}
+      {/* ─── PAYMENTS ─── */}
       {activeTab === "payments" && (
-        <div className="bg-card border rounded-xl overflow-hidden">
+        <Collapsible title="Payment History" count={tenant.payments?.length || 0} defaultOpen>
           {tenant.payments?.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs text-muted-foreground border-b bg-muted/50">
-                    <th className="px-4 py-3 font-medium">Date</th>
-                    <th className="px-4 py-3 font-medium">Amount</th>
-                    <th className="px-4 py-3 font-medium">Month</th>
-                    <th className="px-4 py-3 font-medium">Method</th>
-                    <th className="px-4 py-3 font-medium">Receipt</th>
-                    <th className="px-4 py-3 font-medium">Reference</th>
+                    <th className="px-4 py-2.5 font-medium">Date</th>
+                    <th className="px-4 py-2.5 font-medium">Amount</th>
+                    <th className="px-4 py-2.5 font-medium">Month</th>
+                    <th className="px-4 py-2.5 font-medium">Method</th>
+                    <th className="px-4 py-2.5 font-medium">Receipt</th>
+                    <th className="px-4 py-2.5 font-medium">Reference</th>
                   </tr>
                 </thead>
                 <tbody>
                   {tenant.payments.map((p: any) => (
                     <tr key={p.id} className="border-b last:border-0 hover:bg-muted/30">
-                      <td className="px-4 py-3">{fmtDate(p.date)}</td>
-                      <td className="px-4 py-3 font-bold text-emerald-500">{fmt(Number(p.amount))}</td>
-                      <td className="px-4 py-3">{p.rentMonth}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-2.5">{fmtDate(p.date)}</td>
+                      <td className="px-4 py-2.5 font-bold text-emerald-500">{fmt(Number(p.amount))}</td>
+                      <td className="px-4 py-2.5">{p.rentMonth}</td>
+                      <td className="px-4 py-2.5">
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${PAYMENT_METHODS[p.method] || PAYMENT_METHODS.OTHER}`}>
                           {p.method?.replace("_", " ")}
                         </span>
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{p.receiptNumber || "—"}</td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground truncate max-w-[150px]">{p.transactionId || p.bankReference || "—"}</td>
+                      <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">{p.receiptNumber || "—"}</td>
+                      <td className="px-4 py-2.5 text-xs text-muted-foreground truncate max-w-[150px]">{p.transactionId || p.bankReference || "—"}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
-            <div className="p-8 text-center text-muted-foreground">No payments recorded for this tenant</div>
+            <div className="p-6 text-center text-sm text-muted-foreground">No payments recorded</div>
           )}
-        </div>
+        </Collapsible>
       )}
 
-      {/* RENT LEDGER */}
+      {/* ─── RENT LEDGER ─── */}
       {activeTab === "rent" && (
         <div className="space-y-4">
           {currentAssignment?.rentRecords?.length > 0 ? (
             <>
-              {/* Summary bar */}
-              <div className="bg-card border rounded-xl p-4">
-                <div className="flex flex-wrap gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Rent: </span>
-                    <span className="font-bold">{fmt(summary.monthlyRent)}/mo</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Paid months: </span>
-                    <span className="font-bold text-emerald-500">{summary.paidMonths}/{summary.totalMonths}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Total due: </span>
-                    <span className="font-bold">{fmt(summary.monthlyRent * summary.totalMonths)}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Total paid: </span>
-                    <span className="font-bold text-emerald-500">{fmt(summary.totalPaid)}</span>
+              <Collapsible title="Rent Summary" defaultOpen>
+                <div className="p-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                      ["Monthly Rent", fmt(summary.monthlyRent), ""],
+                      ["Paid Months", `${summary.paidMonths}/${summary.totalMonths}`, "text-emerald-500"],
+                      ["Total Due", fmt(summary.monthlyRent * summary.totalMonths), ""],
+                      ["Total Paid", fmt(summary.totalPaid), "text-emerald-500"],
+                    ].map(([label, value, cls]) => (
+                      <div key={label as string} className="text-center p-3 bg-muted/50 rounded-lg">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
+                        <p className={`text-base font-bold mt-0.5 ${cls}`}>{value}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
+              </Collapsible>
 
-              {/* Month-by-month table */}
-              <div className="bg-card border rounded-xl overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-xs text-muted-foreground border-b bg-muted/50">
-                      <th className="px-4 py-3 font-medium">Month</th>
-                      <th className="px-4 py-3 font-medium">Rent Due</th>
-                      <th className="px-4 py-3 font-medium">Paid</th>
-                      <th className="px-4 py-3 font-medium">Remaining</th>
-                      <th className="px-4 py-3 font-medium">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentAssignment.rentRecords.map((rr: any) => {
-                      const remaining = Number(rr.rentDue) - Number(rr.amountPaid);
-                      const rs = RENT_STATUS[rr.status] || RENT_STATUS.DUE;
-                      return (
-                        <tr key={rr.id} className="border-b last:border-0 hover:bg-muted/30">
-                          <td className="px-4 py-3 font-medium">{monthLabel(rr.month)}</td>
-                          <td className="px-4 py-3">{fmt(Number(rr.rentDue))}</td>
-                          <td className="px-4 py-3 font-medium text-emerald-500">{fmt(Number(rr.amountPaid))}</td>
-                          <td className={`px-4 py-3 font-medium ${remaining > 0 ? "text-red-500" : ""}`}>
-                            {remaining > 0 ? fmt(remaining) : "—"}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${rs.badge}`}>
-                              <rs.icon className="w-3 h-3" /> {rr.status}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <Collapsible title="Month-by-Month Ledger" count={currentAssignment.rentRecords.length} defaultOpen>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-xs text-muted-foreground border-b bg-muted/50">
+                        <th className="px-4 py-2.5 font-medium">Month</th>
+                        <th className="px-4 py-2.5 font-medium">Due</th>
+                        <th className="px-4 py-2.5 font-medium">Paid</th>
+                        <th className="px-4 py-2.5 font-medium">Remaining</th>
+                        <th className="px-4 py-2.5 font-medium">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentAssignment.rentRecords.map((rr: any) => {
+                        const remaining = Number(rr.rentDue) - Number(rr.amountPaid);
+                        const rs = RENT_STATUS[rr.status] || RENT_STATUS.DUE;
+                        return (
+                          <tr key={rr.id} className={`border-b last:border-0 hover:bg-muted/30 ${rr.status === "OVERDUE" ? "bg-red-500/5" : ""}`}>
+                            <td className="px-4 py-2.5 font-medium">{monthLabel(rr.month)}</td>
+                            <td className="px-4 py-2.5">{fmt(Number(rr.rentDue))}</td>
+                            <td className="px-4 py-2.5 font-medium text-emerald-500">{fmt(Number(rr.amountPaid))}</td>
+                            <td className={`px-4 py-2.5 font-medium ${remaining > 0 ? "text-red-500" : ""}`}>
+                              {remaining > 0 ? fmt(remaining) : "—"}
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${rs.badge}`}>
+                                <rs.icon className="w-3 h-3" /> {rr.status}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </Collapsible>
             </>
           ) : (
-            <div className="bg-card border rounded-xl p-8 text-center text-muted-foreground">
-              No rent records found for this tenant
-            </div>
+            <div className="bg-card border rounded-xl p-8 text-center text-muted-foreground">No rent records found</div>
           )}
         </div>
       )}
 
-      {/* ACTIVITY */}
+      {/* ─── ACTIVITY ─── */}
       {activeTab === "activity" && (
-        <div className="bg-card border rounded-xl overflow-hidden">
+        <Collapsible title="Activity Log" count={tenant._auditLogs?.length || 0} defaultOpen>
           {tenant._auditLogs?.length > 0 ? (
             <div className="divide-y">
               {tenant._auditLogs.map((log: any) => (
-                <div key={log.id} className="flex items-start gap-3 px-5 py-3">
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
-                    <History className="w-3.5 h-3.5 text-muted-foreground" />
+                <div key={log.id} className="flex items-start gap-3 px-5 py-2.5">
+                  <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                    <History className="w-3 h-3 text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -456,26 +397,21 @@ export default function TenantHistoryPage() {
                       </span>
                       <span className="text-xs text-muted-foreground">by {log.user}</span>
                     </div>
-                    {log.newValue && (
-                      <p className="text-xs text-muted-foreground mt-1 truncate">{log.newValue}</p>
-                    )}
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {new Date(log.createdAt).toLocaleString("en-IN")}
-                    </p>
+                    {log.newValue && <p className="text-xs text-muted-foreground mt-0.5 truncate">{log.newValue}</p>}
+                    <p className="text-[10px] text-muted-foreground">{new Date(log.createdAt).toLocaleString("en-IN")}</p>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="p-8 text-center text-sm text-muted-foreground">No activity recorded yet</div>
+            <div className="p-6 text-center text-sm text-muted-foreground">No activity yet</div>
           )}
-        </div>
+        </Collapsible>
       )}
     </div>
   );
 }
 
-// Helper functions
 function monthLabel(month: string): string {
   const [y, m] = month.split("-").map(Number);
   return new Date(y, m - 1).toLocaleDateString("en-IN", { month: "long", year: "numeric" });
