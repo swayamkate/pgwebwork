@@ -8,6 +8,7 @@
 
 const el = (id) => document.getElementById(id);
 const money = (n) => "\u20b9" + Number(n || 0).toLocaleString("en-IN");
+const isArray = (v) => Array.isArray(v);
 const BADGE = { paid: "Paid", due: "Due", late: "Overdue" };
 
 const initials = (name) =>
@@ -243,11 +244,6 @@ function renderFeed() {
 }
 
 /* ---------- dashboard graphs ---------- */
-
-function monthKey() {
-  const d = new Date();
-  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
-}
 
 function renderGraph() {
   const rooms = PGStore.state().rooms;
