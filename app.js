@@ -131,6 +131,7 @@ function expenseSummary() {
     month,
     monthTotal: month.reduce((s, x) => s + x.amount, 0),
     allTotal: list.reduce((s, x) => s + x.amount, 0),
+    byCat,
     top,
     topAmount: top ? byCat[top] : 0
   };
