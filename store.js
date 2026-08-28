@@ -21,7 +21,7 @@
       expenses: [],
       rates: [],
       complaints: [],
-      owner: { name: "", phone: "", address: "", upiId: "" },
+      owner: { name: "", phone: "", address: "", upiId: "", pgStartDate: "" },
       settings: defaultSettings(),
       cycle: cycleId()
     };
@@ -210,7 +210,8 @@
         name: clean(raw.owner.name, 60),
         phone: clean(raw.owner.phone, 24),
         address: clean(raw.owner.address, 120),
-        upiId: clean(raw.owner.upiId, 60)
+        upiId: clean(raw.owner.upiId, 60),
+        pgStartDate: clean(raw.owner.pgStartDate, 24)
       };
     }
 
@@ -986,7 +987,8 @@
         name: name,
         phone: clean(data.phone, 24),
         address: clean(data.address, 120),
-        upiId: clean(data.upiId, 60)
+        upiId: clean(data.upiId, 60),
+        pgStartDate: clean(data.pgStartDate, 24)
       };
       log("in", "Owner details updated", name);
       save();

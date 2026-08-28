@@ -484,12 +484,21 @@ function renderOwner() {
       }</span></div>
       <div class="own-cell"><b>Property</b><span>${t.rooms} ${t.rooms === 1 ? "room" : "rooms"} · ${t.beds} beds · ${t.occupied} filled</span></div>
       <div class="own-cell"><b>Rent this month</b><span>${money(t.collected)} of ${money(t.expected)}</span></div>
+      ${o.pgStartDate ? `<div class="own-cell"><b>PG Started</b><span>${prettyDate(o.pgStartDate)} · ${pgDuration(o.pgStartDate)}</span></div>` : ""}
     </div>`;
 
   /* The greeting and the avatar follow whatever name the owner saved. */
   el("greet").textContent = greeting() + ", " + String(name).split(" ")[0];
   el("avatar").textContent = initials(name);
   el("avatar").title = name;
+
+  /* Show PG starting date below the greeting */
+  const pgDate = el("pg-start-info");
+  if (pgDate) {
+    const sd = o.pgStartDate;
+    pgDate.textContent = sd ? "Running for " + pgDuration(sd) + " since " + prettyDate(sd) : "";
+    pgDate.style.display = sd ? "" : "none";
+  }
 }
 
 /* Shows the labels the current choices actually produce, using real rooms. */
@@ -587,6 +596,7 @@ function openOwnerDialog() {
   el("o-phone").value = o.phone || "";
   if (el("o-upi")) { el("o-upi").value = o.upiId || ""; }
   el("o-address").value = o.address || "";
+  if (el("o-pgdate")) { el("o-pgdate").value = o.pgStartDate || ""; }
   openDlg("dlg-owner");
 }
 
@@ -1175,7 +1185,8 @@ el("form-owner").addEventListener("submit", (e) => {
     name: el("o-name").value,
     phone: el("o-phone").value,
     upiId: el("o-upi") ? el("o-upi").value : "",
-    address: el("o-address").value
+    address: el("o-address").value,
+    pgStartDate: el("o-pgdate") ? el("o-pgdate").value : ""
   });
   if (!res.ok) { showErr("o-err", res.error); return; }
   closeDlg("dlg-owner");
@@ -1242,6 +1253,23 @@ el("tabs").addEventListener("click", (e) => {
 window.addEventListener("hashchange", () => show(location.hash.slice(1) || "dashboard"));
 
 /* ---------- boot ---------- */
+
+function pgDuration(startDate) {
+  const start = new Date(startDate);
+  const now = new Date();
+  const diffMs = now.getTime() - start.getTime();
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (days < 0) return "not started yet";
+  if (days < 30) return days + " day" + (days !== 1 ? "s" : "");
+  const months = Math.floor(days / 30);
+  const rem = days % 30;
+  if (months < 12) {
+    return months + " month" + (months !== 1 ? "s" : "") + (rem > 0 ? " and " + rem + " day" + (rem !== 1 ? "s" : "") : "");
+  }
+  const years = Math.floor(months / 12);
+  const rMonths = months % 12;
+  return years + " year" + (years !== 1 ? "s" : "") + (rMonths > 0 ? " and " + rMonths + " month" + (rMonths !== 1 ? "s" : "") : "");
+}
 
 function greeting() {
   const h = new Date().getHours();

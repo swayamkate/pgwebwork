@@ -109,7 +109,8 @@
     <div class="page-head">
       <div>
         <h1 id="greet">Welcome</h1>
-        <p class="sub">Here is how your property is doing today.</p>
+        <p class="sub" id="pg-start-info" style="display:none"></p>
+        <p class="sub" id="welcome-sub">Here is how your property is doing today.</p>
       </div>
       <span class="stamp" id="stamp"></span>
     </div>
@@ -464,6 +465,7 @@
       <label class="field span-2"><span>Phone <i class="field-opt">optional</i></span><input id="o-phone" maxlength="24" placeholder="+91 98765 43210" /></label>
       <label class="field span-2"><span>UPI ID for rent reminders <i class="field-opt">e.g. name@upi</i></span><input id="o-upi" maxlength="60" placeholder="owner@okaxis" /></label>
       <label class="field span-2"><span>Property address <i class="field-opt">optional</i></span><input id="o-address" maxlength="120" placeholder="Street, area, city" /></label>
+      <label class="field span-2"><span>PG Starting Date <i class="field-opt">When did your PG start?</i></span><input id="o-pgdate" type="date" /></label>
     </div>
     <p class="auth-error" id="o-err" hidden></p>
     <div class="dlg-foot">
