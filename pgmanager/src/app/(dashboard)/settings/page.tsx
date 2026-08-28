@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save, Building2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Save, Building2, Calendar, Info } from "lucide-react";
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -63,7 +64,7 @@ export default function SettingsPage() {
             <label className="text-sm font-medium">Address</label>
             <textarea value={settings.address || ""} rows={2}
               onChange={(e) => update("address", e.target.value)}
-              className="w-full mt-1 px-3 py-2 border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+              className="w-full mt-1 px-3 py-2 border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-2 focus:ring-ring" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -79,6 +80,34 @@ export default function SettingsPage() {
                 className="w-full mt-1 px-3 py-2 border rounded-lg bg-background text-sm" />
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* PG Start Date */}
+      <div className="bg-card border rounded-xl p-6">
+        <h2 className="font-semibold mb-4 flex items-center gap-2">
+          <Calendar className="w-4 h-4" /> PG Starting Date
+        </h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Set the date when your PG started operations. This is used for historical reports and tracking how long the business has been running.
+        </p>
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">When did your PG start?</label>
+            <input type="date" value={settings.pg_start_date || ""}
+              onChange={(e) => update("pg_start_date", e.target.value)}
+              className="w-full mt-1 px-3 py-2 border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+          </div>
+          {settings.pg_start_date && (
+            <div className="flex items-start gap-2 p-3 bg-primary/5 rounded-lg">
+              <Info className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+              <div className="text-sm">
+                <p className="text-muted-foreground">
+                  Your PG has been running for <span className="font-bold text-foreground">{calculateDuration(settings.pg_start_date)}</span> since {new Date(settings.pg_start_date).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -119,4 +148,25 @@ export default function SettingsPage() {
       </div>
     </div>
   );
+}
+
+function calculateDuration(startDate: string): string {
+  const start = new Date(startDate);
+  const now = new Date();
+  const diffMs = now.getTime() - start.getTime();
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (days < 0) return "not started yet";
+  if (days < 30) return `${days} day${days !== 1 ? "s" : ""}`;
+
+  const months = Math.floor(days / 30);
+  const remainingDays = days % 30;
+
+  if (months < 12) {
+    return `${months} month${months !== 1 ? "s" : ""}${remainingDays > 0 ? ` and ${remainingDays} day${remainingDays !== 1 ? "s" : ""}` : ""}`;
+  }
+
+  const years = Math.floor(months / 12);
+  const remainingMonths = months % 12;
+  return `${years} year${years !== 1 ? "s" : ""}${remainingMonths > 0 ? ` and ${remainingMonths} month${remainingMonths !== 1 ? "s" : ""}` : ""}`;
 }
