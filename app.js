@@ -308,14 +308,22 @@ function renderTenants() {
   blank.hidden = true;
   blank.innerHTML = "";
 
-  const actions = (t) => `
-    <button class="link-btn" type="button" data-act="profile" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">Profile</button>
-    <button class="link-btn" type="button" data-act="transfer" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">Transfer</button>
-    <button class="link-btn" type="button" data-act="backfill" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">History</button>
-    <button class="link-btn" type="button" data-act="receipt" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">Receipt</button>
-    ${!t.paid ? `<button class="link-btn" type="button" data-act="wa-remind" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">WhatsApp</button>` : ""}
-    <button class="link-btn" type="button" data-act="notice" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">${t.onNotice ? "Cancel notice" : "On notice"}</button>
-    <button class="link-btn link-danger" type="button" data-act="checkout" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">Check out</button>`;
+  const actions = (t) => {
+    const id = `dd-${t.roomId}-${t.bedIndex}`;
+    return `<span class="dd-wrap">
+      <button class="dd-trigger" type="button" data-dd="${id}" aria-haspopup="true" aria-expanded="false">\u22ee</button>
+      <span class="dd-menu" id="${id}" role="menu" hidden>
+        <button class="dd-item" role="menuitem" data-act="profile" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">Profile</button>
+        <button class="dd-item" role="menuitem" data-act="transfer" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">Transfer bed</button>
+        <button class="dd-item" role="menuitem" data-act="backfill" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">Payment history</button>
+        <button class="dd-item" role="menuitem" data-act="receipt" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">Receipt</button>
+        ${!t.paid ? `<button class="dd-item" role="menuitem" data-act="wa-remind" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">WhatsApp reminder</button>` : ""}
+        <button class="dd-item" role="menuitem" data-act="notice" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">${t.onNotice ? "Cancel notice" : "Put on notice"}</button>
+        <span class="dd-divider"></span>
+        <button class="dd-item dd-danger" role="menuitem" data-act="checkout" data-room="${esc(t.roomId)}" data-bed="${t.bedIndex}">Check out</button>
+      </span>
+    </span>`;
+  };
 
   el("tenant-rows").innerHTML = list.map((t) => `
     <tr>
@@ -1008,9 +1016,31 @@ function exportExpensesCsv() {
 
 /* ---------- actions ---------- */
 
+/* ---------- dropdown menus ---------- */
 document.addEventListener("click", (e) => {
+  /* Toggle dropdown on trigger click */
+  const trigger = e.target.closest("[data-dd]");
+  if (trigger) {
+    e.stopPropagation();
+    const menu = el(trigger.dataset.dd);
+    const open = menu.hidden;
+    /* Close all other open menus first */
+    document.querySelectorAll(".dd-menu:not([hidden])").forEach((m) => { m.hidden = true; });
+    menu.hidden = !open;
+    trigger.setAttribute("aria-expanded", String(open));
+    return;
+  }
+  /* Close any open menu when clicking elsewhere */
+  if (!e.target.closest(".dd-menu")) {
+    document.querySelectorAll(".dd-menu:not([hidden])").forEach((m) => { m.hidden = true; });
+    document.querySelectorAll("[aria-expanded]").forEach((b) => { b.setAttribute("aria-expanded", "false"); });
+  }
+
   const btn = e.target.closest("[data-act]");
   if (!btn) { return; }
+  /* Close the parent dropdown if this action came from one */
+  const parentMenu = btn.closest(".dd-menu");
+  if (parentMenu) { parentMenu.hidden = true; }
 
   const act = btn.dataset.act;
   const roomId = btn.dataset.room;

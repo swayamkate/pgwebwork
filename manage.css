@@ -58,6 +58,32 @@
   color:var(--brand);background:var(--brand-soft);border-radius:5px;padding:2px 6px;margin-left:6px;
 }
 
+/* ---------- dropdown menu ---------- */
+.dd-wrap{position:relative;display:inline-block}
+.dd-trigger{
+  border:0;background:none;color:var(--muted);font-size:18px;line-height:1;
+  padding:4px 8px;border-radius:8px;cursor:pointer;
+  transition:color .15s ease, background .15s ease;
+}
+.dd-trigger:hover{color:var(--text);background:var(--surface-3)}
+.dd-menu{
+  position:absolute;right:0;top:100%;margin-top:4px;z-index:50;
+  min-width:180px;background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:4px;box-shadow:var(--shadow-lg);
+}
+.dd-menu[hidden]{display:none}
+.dd-item{
+  display:block;width:100%;text-align:left;border:0;background:none;
+  font:inherit;font-size:13px;font-weight:500;color:var(--text);
+  padding:8px 12px;border-radius:8px;cursor:pointer;
+  transition:background .12s ease;
+}
+.dd-item:hover{background:var(--surface-2)}
+.dd-item:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
+.dd-danger{color:var(--red)}
+.dd-danger:hover{background:var(--red-soft)}
+.dd-divider{height:1px;background:var(--border);margin:4px 8px}
+
 /* Offboarding settlement dialog */
 .ob-calc-card{
   margin:18px 0 20px;padding:16px 18px;border-radius:14px;
