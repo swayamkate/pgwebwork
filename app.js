@@ -1159,10 +1159,14 @@ function renderBackup(s) {
   el("backup-actions").hidden = !(window.PGSheets && PGSheets.enabled);
 }
 
-/* Redraw, then send the change to the sheet once typing settles. */
+/* Redraw, then send the change to the sheet and Supabase. */
 function commit() {
   renderAll();
   if (window.PGSheets) { PGSheets.schedule(PGStore.state()); }
+  /* Sync to Supabase if connected. */
+  if (window.SupabaseStorage && SupabaseStorage.isAvailable()) {
+    SupabaseStorage.save(PGStore.state()).catch(function () { /* offline, will retry next change */ });
+  }
 }
 
 /* Expose for other files (rent.js) that need to trigger a full save. */
@@ -1845,6 +1849,30 @@ function boot(session) {
   /* Connect to Supabase data storage if available. */
   if (window.SupabaseStorage) {
     SupabaseStorage.init(accountId);
+    /* Load data from Supabase if available (async). localStorage is used
+       as the immediate source; Supabase data merges in when ready. */
+    if (SupabaseStorage.isAvailable()) {
+      SupabaseStorage.load().then(function (data) {
+        if (data && data.rooms && data.rooms.length) {
+          /* Only replace if Supabase has actual data and local is empty. */
+          if (PGStore.isEmpty()) {
+            PGStore.replaceAll({
+              property: PGStore.state().property || "",
+              rooms: data.rooms,
+              expenses: data.expenses || [],
+              activity: PGStore.state().activity || [],
+              rates: PGStore.state().rates || [],
+              complaints: PGStore.state().complaints || [],
+              rules: PGStore.state().rules || {},
+              owner: PGStore.state().owner || { name: "", phone: "", address: "", upiId: "", pgStartDate: "" },
+              settings: PGStore.state().settings || { floors: true, bedStyle: "alpha", bedNumbering: "restart" },
+              cycle: PGStore.state().cycle || ""
+            });
+            renderAll();
+          }
+        }
+      }).catch(function () { /* offline or table missing — localStorage is fine */ });
+    }
   }
 
   el("greet").textContent = greeting() + ", " + String(name).split(" ")[0];

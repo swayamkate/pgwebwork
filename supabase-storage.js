@@ -96,8 +96,9 @@
   function getUser() {
     var c = getClient();
     if (!c) { return null; }
-    var session = c.auth.session && c.auth.session();
-    return session ? session.user : null;
+    /* Supabase v2: session is fetched asynchronously. For sync callers,
+       return null and let them use getUserAsync instead. */
+    return null;
   }
 
   /* ---- CRUD: rooms ---- */
@@ -201,9 +202,10 @@
   /* ---- high-level: load full state ---- */
 
   async function loadFull() {
-    var rooms = await fetchRooms();
-    var beds = await fetchBeds();
-    var expenses = await fetchExpenses();
+    var rooms, beds, expenses;
+    try { rooms = await fetchRooms(); } catch (e) { rooms = []; }
+    try { beds = await fetchBeds(); } catch (e) { beds = []; }
+    try { expenses = await fetchExpenses(); } catch (e) { expenses = []; }
 
     /* Rebuild the nested structure the app expects. */
     var roomsById = {};
@@ -294,10 +296,11 @@
       return { id: x.id, date: x.date, category: x.category, note: x.note, amount: x.amount };
     });
 
-    /* Upsert all current data. */
-    if (roomRows.length) { await upsertRooms(roomRows); }
-    if (bedRows.length) { await upsertBeds(bedRows); }
-    if (expenseRows.length) { await upsertExpenses(expenseRows); }
+    /* Upsert all current data. Each call is wrapped so a missing table
+       never kills the entire save — the rest of the data still lands. */
+    try { if (roomRows.length) { await upsertRooms(roomRows); } } catch (e) { console.warn('Supabase rooms save failed:', e); }
+    try { if (bedRows.length) { await upsertBeds(bedRows); } } catch (e) { console.warn('Supabase beds save failed:', e); }
+    try { if (expenseRows.length) { await upsertExpenses(expenseRows); } } catch (e) { console.warn('Supabase expenses save failed:', e); }
 
     /* Delete rows that were removed in the app. */
     try {
