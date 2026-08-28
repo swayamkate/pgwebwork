@@ -853,20 +853,13 @@ function renderAll() {
   const s = PGStore.state();
   el("brand-prop").textContent = s.property || "Name your property";
   el("setup").hidden = !PGStore.isEmpty();
-  renderStats();
-  renderGraph();
-  renderRentStatus();
-  renderFloors();
-  renderFeed();
-  renderExpDashboard();
-  renderRooms();
-  renderTenants();
-  renderRent();
-  renderExpenses();
-  renderOwner();
-  renderSettings();
-  renderRates();
-  applyFloorSetting();
+  /* Each render is wrapped so one failure never kills the rest. */
+  var fns = [
+    renderStats, renderGraph, renderRentStatus, renderFloors, renderFeed,
+    renderExpDashboard, renderRooms, renderTenants, renderRent, renderExpenses,
+    renderOwner, renderSettings, renderRates, applyFloorSetting
+  ];
+  fns.forEach(function (fn) { try { fn(); } catch (err) { console.error(err); } });
 }
 
 /* ---------- backup ---------- */
