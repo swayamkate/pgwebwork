@@ -133,7 +133,7 @@ body{
 .tab:focus-visible{outline:2px solid var(--brand);outline-offset:1px}
 
 /* ---------- layout ---------- */
-main{padding:36px 28px 80px}
+main{padding:36px 28px 100px}
 .view{display:none}
 .view.is-active{display:block;animation:rise .28s ease both}
 @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -314,7 +314,7 @@ h2{font-size:16.5px;letter-spacing:-.018em;font-weight:650;line-height:1.35;marg
 .btn-primary:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 
 /* ---------- footer ---------- */
-.foot{border-top:1px solid var(--border);background:var(--surface);padding:26px 0}
+.foot{border-top:1px solid var(--border);background:var(--surface);padding:14px 0;position:fixed;bottom:0;left:0;right:0;z-index:20;backdrop-filter:saturate(180%) blur(12px);-webkit-backdrop-filter:saturate(180%) blur(12px);background:color-mix(in srgb, var(--surface) 85%, transparent)}
 .foot-in{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
 
 /* ---------- auth / landing ---------- */
