@@ -1120,7 +1120,7 @@ function bulkMarkAllPaid() {
 function resetAllData() {
   if (!confirm("⚠️ This will DELETE ALL your rooms, tenants, expenses, and settings. This cannot be undone!")) return;
   if (!confirm("Are you absolutely sure? Type your decision in your head and click OK if you want to proceed.")) return;
-  PGStore.replaceAll({ property: "", rooms: [], activity: [], expenses: [], rates: [], complaints: [], owner: { name: "", phone: "", address: "", upiId: "", pgStartDate: "" }, settings: { floors: true, bedStyle: "alpha", bedNumbering: "restart" }, cycle: "" });
+  PGStore.replaceAll({ property: "", rooms: [], activity: [], expenses: [], rates: [], complaints: [], rules: {}, owner: { name: "", phone: "", address: "", upiId: "", pgStartDate: "" }, settings: { floors: true, bedStyle: "alpha", bedNumbering: "restart" }, cycle: "" });
   commit();
   alert("All data has been cleared.");
 }
@@ -1164,6 +1164,9 @@ function commit() {
   renderAll();
   if (window.PGSheets) { PGSheets.schedule(PGStore.state()); }
 }
+
+/* Expose for other files (rent.js) that need to trigger a full save. */
+window.PGRender = { commit: commit };
 
 /* ---------- dialogs ---------- */
 
