@@ -110,6 +110,45 @@ export async function GET() {
       methodBreakdown[p.method] = (methodBreakdown[p.method] || 0) + Number(p.amount);
     });
 
+    // Tenant-level rent breakdown (who owes what)
+    const tenantBreakdown = assignments.map((a) => {
+      const rr = rentRecords.find((r) => r.assignmentId === a.id);
+      const paid = rr ? Number(rr.amountPaid) : 0;
+      const due = rr ? Number(rr.rentDue) : Number(a.monthlyRent);
+      const remaining = Math.max(0, due - paid);
+      const status = rr?.status || (paid > 0 ? "PARTIAL" : "DUE");
+      return {
+        tenantId: a.tenantId,
+        tenantName: a.tenant.name,
+        roomNumber: a.bed.room.number,
+        bedNumber: a.bed.number,
+        monthlyRent: due,
+        paid,
+        remaining,
+        status,
+        joiningDate: a.joiningDate,
+      };
+    }).sort((a, b) => b.remaining - a.remaining);
+
+    // Recent payments with tenant names
+    const recentWithNames = payments.slice(0, 15).map((p) => {
+      const assignment = assignments.find((a) => a.tenantId === p.tenantId);
+      return {
+        id: p.id,
+        tenantName: assignment?.tenant.name || "Unknown",
+        roomNumber: assignment?.bed.room.number || "—",
+        amount: Number(p.amount),
+        date: p.date,
+        method: p.method,
+        rentMonth: p.rentMonth,
+      };
+    });
+
+    // Today's activity
+    const todayPayments = recentWithNames.filter(
+      (p) => p.date.toISOString().slice(0, 10) === today
+    );
+
     return NextResponse.json({
       occupancy: {
         totalRooms,
@@ -140,14 +179,10 @@ export async function GET() {
         monthlyRevenue,
         methodBreakdown,
       },
+      tenantBreakdown,
+      todayPayments,
+      recentPayments: recentWithNames,
       unmatchedTransactions: unmatchedTxns,
-      recentPayments: payments.slice(0, 10).map((p) => ({
-        id: p.id,
-        amount: Number(p.amount),
-        date: p.date,
-        method: p.method,
-        rentMonth: p.rentMonth,
-      })),
     });
   } catch (error) {
     console.error("Dashboard error:", error);
