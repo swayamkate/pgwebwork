@@ -913,6 +913,220 @@ function applyFloorSetting() {
   if (field) { field.hidden = PGStore.state().settings.floors === false; }
 }
 
+/* ---------- owner quick actions, deposits, rules, data management ---------- */
+
+function renderOwnerActions() {
+  const t = totals();
+  const list = tenants();
+  const unpaid = list.filter((x) => !x.paid);
+
+  el("owner-actions").innerHTML = `
+    <div class="oa-grid">
+      <button class="oa-card" type="button" data-act="bulk-mark-paid">
+        <span class="oa-icon oa-green">\u2713</span>
+        <span class="oa-text"><b>Mark all rent paid</b><span>Mark every tenant as paid for this month</span></span>
+      </button>
+      <button class="oa-card" type="button" data-act="bulk-whatsapp" ${!unpaid.length ? 'disabled' : ''}>
+        <span class="oa-icon oa-blue">\ud83d\udcac</span>
+        <span class="oa-text"><b>Broadcast WhatsApp</b><span>Send rent reminder to all unpaid tenants (${unpaid.length})</span></span>
+      </button>
+      <button class="oa-card" type="button" data-act="export-all">
+        <span class="oa-icon oa-amber">\u2b07</span>
+        <span class="oa-text"><b>Export all data</b><span>Download complete backup as JSON file</span></span>
+      </button>
+      <button class="oa-card" type="button" data-act="send-receipt-all" ${!t.collected ? 'disabled' : ''}>
+        <span class="oa-icon oa-purple">\ud83d\udcc4</span>
+        <span class="oa-text"><b>Send receipts</b><span>Send WhatsApp receipts to all paid tenants</span></span>
+      </button>
+    </div>`;
+}
+
+function renderDeposits() {
+  const list = tenants();
+  const withDeposit = list.filter((t) => t.deposit > 0);
+  const totalDeposits = withDeposit.reduce((s, t) => s + t.deposit, 0);
+
+  el("deposit-summary").textContent = withDeposit.length
+    ? money(totalDeposits) + " from " + withDeposit.length + " tenant" + (withDeposit.length !== 1 ? "s" : "")
+    : "No deposits recorded";
+
+  if (!withDeposit.length) {
+    el("deposit-list").innerHTML = '<p class="feed-blank">No security deposits recorded. Deposits are saved when you add or edit a tenant.</p>';
+    return;
+  }
+
+  el("deposit-list").innerHTML = '<ul class="paylist">' + withDeposit.map((t) => `
+    <li>
+      <span class="pay-left">
+        <span class="av">${esc(initials(t.name))}</span>
+        <span class="pay-name">${esc(t.name)}<span>Room ${esc(t.roomNo)} \u00b7 Bed ${t.bed}</span></span>
+      </span>
+      <span class="pay-right">
+        <span class="amount">${money(t.deposit)}</span>
+        <span class="badge badge-paid">Held</span>
+      </span>
+    </li>`).join('') + '</ul>' + `
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:13px">
+      <span style="color:var(--muted)">Total deposits held</span>
+      <span style="font-weight:700;color:var(--green)">${money(totalDeposits)}</span>
+    </div>`;
+}
+
+function renderRules() {
+  const s = PGStore.state();
+  const rules = s.rules || {};
+  const items = [];
+  if (rules.visiting) { items.push({ label: "Visiting hours", value: rules.visiting }); }
+  if (rules.quiet) { items.push({ label: "Quiet hours", value: rules.quiet }); }
+  if (rules.guests) { items.push({ label: "Guest policy", value: rules.guests }); }
+  if (rules.lockout) { items.push({ label: "Lockout time", value: rules.lockout }); }
+  if (rules.other) { items.push({ label: "Other rules", value: rules.other }); }
+
+  if (!items.length) {
+    el("rules-display").innerHTML = '<p class="feed-blank">No rules set yet. Click "Edit rules" to add house rules for your PG.</p>';
+    return;
+  }
+
+  el("rules-display").innerHTML = items.map((r) => `
+    <div class="rules-item">
+      <b>${esc(r.label)}</b>
+      <span>${esc(r.value)}</span>
+    </div>`).join("");
+}
+
+function renderDataActions() {
+  const t = totals();
+  const list = tenants();
+  const s = PGStore.state();
+  const totalExpenses = (s.expenses || []).reduce((sum, e) => sum + e.amount, 0);
+  const totalDeposits = list.filter((t) => t.deposit > 0).reduce((sum, t) => sum + t.deposit, 0);
+  const dataSizeKB = Math.round(JSON.stringify(s).length / 1024);
+
+  el("data-actions").innerHTML = `
+    <div class="oa-grid">
+      <div class="data-stat-card">
+        <b>Data summary</b>
+        <div class="data-stat-row"><span>Rooms</span><span>${t.rooms}</span></div>
+        <div class="data-stat-row"><span>Tenants</span><span>${t.occupied}</span></div>
+        <div class="data-stat-row"><span>Expenses</span><span>${(s.expenses || []).length} entries</span></div>
+        <div class="data-stat-row"><span>Total collected</span><span>${money(t.collected)}</span></div>
+        <div class="data-stat-row"><span>Total expenses</span><span>${money(totalExpenses)}</span></div>
+        <div class="data-stat-row"><span>Deposits held</span><span>${money(totalDeposits)}</span></div>
+        <div class="data-stat-row"><span>Data size</span><span>${dataSizeKB} KB</span></div>
+      </div>
+      <div class="data-btn-col">
+        <button class="oa-card" type="button" data-act="download-backup">
+          <span class="oa-icon oa-green">\u2b07</span>
+          <span class="oa-text"><b>Download backup</b><span>Save all your data as a JSON file</span></span>
+        </button>
+        <button class="oa-card" type="button" data-act="import-backup">
+          <span class="oa-icon oa-blue">\u2b06</span>
+          <span class="oa-text"><b>Restore from backup</b><span>Import a previously saved JSON backup</span></span>
+        </button>
+        <button class="oa-card oa-danger" type="button" data-act="reset-all">
+          <span class="oa-icon oa-red">\u2716</span>
+          <span class="oa-text"><b>Reset all data</b><span>Clear everything and start fresh (cannot be undone)</span></span>
+        </button>
+      </div>
+    </div>`;
+}
+
+function openRulesDialog() {
+  const rules = PGStore.state().rules || {};
+  el("ru-visit").value = rules.visiting || "";
+  el("ru-quiet").value = rules.quiet || "";
+  el("ru-guest").value = rules.guests || "";
+  el("ru-lock").value = rules.lockout || "";
+  el("ru-other").value = rules.other || "";
+  openDlg("dlg-rules");
+}
+
+function downloadJsonBackup() {
+  const s = PGStore.state();
+  const blob = new Blob([JSON.stringify(s, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "pg-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importJsonBackup() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json";
+  input.onchange = function (e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (ev) {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (!data || !data.rooms) { alert("This does not look like a valid PG Manager backup."); return; }
+        if (!confirm("This will replace ALL current data with the backup. Continue?")) return;
+        PGStore.replaceAll(data);
+        commit();
+        alert("Backup restored successfully!");
+      } catch (err) {
+        alert("Could not read the backup file: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function exportAllCsv() {
+  exportTenantsCsv();
+  setTimeout(exportLedgerCsv, 500);
+  setTimeout(exportExpensesCsv, 1000);
+}
+
+function broadcastWhatsAppReminders() {
+  const list = tenants();
+  const unpaid = list.filter((t) => !t.paid && t.phone);
+  if (!unpaid.length) { alert("No unpaid tenants with phone numbers."); return; }
+  const count = unpaid.length;
+  if (!confirm("Send WhatsApp rent reminders to " + count + " unpaid tenant" + (count !== 1 ? "s" : "") + ". Continue?")) return;
+  unpaid.forEach((t, i) => {
+    setTimeout(function () { sendWhatsAppReminder(t.roomId, t.bedIndex); }, i * 1000);
+  });
+}
+
+function sendReceiptsToAllPaid() {
+  const list = tenants();
+  const paid = list.filter((t) => t.paid && t.phone);
+  if (!paid.length) { alert("No paid tenants with phone numbers."); return; }
+  const count = paid.length;
+  if (!confirm("Send WhatsApp receipts to " + count + " paid tenant" + (count !== 1 ? "s" : "") + ". Continue?")) return;
+  paid.forEach((t, i) => {
+    setTimeout(function () { sendWhatsAppReminder(t.roomId, t.bedIndex); }, i * 1000);
+  });
+}
+
+function bulkMarkAllPaid() {
+  const list = tenants();
+  const unpaid = list.filter((t) => !t.paid);
+  if (!unpaid.length) { alert("All tenants are already marked as paid!"); return; }
+  if (!confirm("Mark " + unpaid.length + " tenant" + (unpaid.length !== 1 ? "s" : "") + " as paid for this month?")) return;
+  unpaid.forEach((t) => {
+    PGStore.setPaid(t.roomId, t.bedIndex, true);
+  });
+  commit();
+  alert("Marked " + unpaid.length + " tenant" + (unpaid.length !== 1 ? "s" : "") + " as paid.");
+}
+
+function resetAllData() {
+  if (!confirm("⚠️ This will DELETE ALL your rooms, tenants, expenses, and settings. This cannot be undone!")) return;
+  if (!confirm("Are you absolutely sure? Type your decision in your head and click OK if you want to proceed.")) return;
+  PGStore.replaceAll({ property: "", rooms: [], activity: [], expenses: [], rates: [], complaints: [], owner: { name: "", phone: "", address: "", upiId: "", pgStartDate: "" }, settings: { floors: true, bedStyle: "alpha", bedNumbering: "restart" }, cycle: "" });
+  commit();
+  alert("All data has been cleared.");
+}
+
+/* ---------- owner tab render ---------- */
+
 function renderAll() {
   const s = PGStore.state();
   el("brand-prop").textContent = s.property || "Name your property";
@@ -921,7 +1135,8 @@ function renderAll() {
   var fns = [
     renderStats, renderGraph, renderRentStatus, renderFloors, renderFeed,
     renderExpDashboard, renderRooms, renderTenants, renderRent, renderExpenses,
-    renderComplaints, renderOwner, renderSettings, renderRates, applyFloorSetting
+    renderComplaints, renderOwner, renderSettings, renderRates, applyFloorSetting,
+    renderOwnerActions, renderDeposits, renderRules, renderDataActions
   ];
   fns.forEach(function (fn) { try { fn(); } catch (err) { console.error(err); } });
 }
@@ -1407,6 +1622,22 @@ document.addEventListener("click", (e) => {
     exportLedgerCsv();
   } else if (act === "export-expenses") {
     exportExpensesCsv();
+  } else if (act === "bulk-mark-paid") {
+    bulkMarkAllPaid();
+  } else if (act === "bulk-whatsapp") {
+    broadcastWhatsAppReminders();
+  } else if (act === "export-all") {
+    exportAllCsv();
+  } else if (act === "send-receipt-all") {
+    sendReceiptsToAllPaid();
+  } else if (act === "download-backup") {
+    downloadJsonBackup();
+  } else if (act === "import-backup") {
+    importJsonBackup();
+  } else if (act === "reset-all") {
+    resetAllData();
+  } else if (act === "edit-rules") {
+    openRulesDialog();
   } else if (act === "set-opt") {
     const raw = btn.dataset.val;
     const patch = {};
@@ -1484,6 +1715,19 @@ el("form-owner").addEventListener("submit", (e) => {
   });
   if (!res.ok) { showErr("o-err", res.error); return; }
   closeDlg("dlg-owner");
+  commit();
+});
+
+el("form-rules").addEventListener("submit", (e) => {
+  e.preventDefault();
+  PGStore.setRules({
+    visiting: el("ru-visit").value,
+    quiet: el("ru-quiet").value,
+    guests: el("ru-guest").value,
+    lockout: el("ru-lock").value,
+    other: el("ru-other").value
+  });
+  closeDlg("dlg-rules");
   commit();
 });
 

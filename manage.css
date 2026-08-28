@@ -355,6 +355,56 @@ button.bed-add:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
   .pf-foot{justify-content:flex-end}
 }
 
+/* ---------- owner actions, deposits, rules, data management ---------- */
+.owner-actions{margin-top:4px}
+.oa-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.oa-card{
+  display:flex;align-items:flex-start;gap:14px;padding:16px 18px;
+  background:var(--surface-2);border:1px solid var(--border);border-radius:14px;
+  cursor:pointer;text-align:left;font:inherit;color:var(--text);
+  transition:border-color .15s ease, background .15s ease;
+}
+.oa-card:hover{border-color:var(--brand);background:var(--brand-soft)}
+.oa-card:disabled{opacity:.45;cursor:not-allowed}
+.oa-card:disabled:hover{border-color:var(--border);background:var(--surface-2)}
+.oa-danger:hover{border-color:var(--red)!important;background:var(--red-soft)!important}
+.oa-icon{
+  width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;
+}
+.oa-green{background:var(--green-soft);color:var(--green)}
+.oa-blue{background:var(--brand-soft);color:var(--brand)}
+.oa-amber{background:var(--amber-soft);color:var(--amber)}
+.oa-purple{background:rgba(139,92,246,.15);color:#a78bfa}
+.oa-red{background:var(--red-soft);color:var(--red)}
+.oa-text{display:flex;flex-direction:column;gap:3px;min-width:0}
+.oa-text b{font-size:14px;font-weight:600;line-height:1.3}
+.oa-text span{font-size:12px;color:var(--muted);line-height:1.4}
+
+.data-stat-card{
+  padding:16px 18px;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;
+}
+.data-stat-card b{display:block;font-size:14px;font-weight:600;margin-bottom:12px}
+.data-stat-row{
+  display:flex;justify-content:space-between;padding:6px 0;font-size:13px;
+  border-bottom:1px solid var(--hairline);
+}
+.data-stat-row:last-child{border-bottom:0}
+.data-stat-row span:first-child{color:var(--muted)}
+.data-stat-row span:last-child{font-weight:600}
+.data-btn-col{display:flex;flex-direction:column;gap:10px}
+
+.rules-item{
+  padding:12px 0;border-bottom:1px solid var(--hairline);
+}
+.rules-item:last-child{border-bottom:0}
+.rules-item b{display:block;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--faint);margin-bottom:4px}
+.rules-item span{font-size:13.5px;line-height:1.55;color:var(--text)}
+
+@media (max-width:640px){
+  .oa-grid{grid-template-columns:1fr}
+}
+
 /* ---------- owner, settings and rate card ---------- */
 
 .own-top{display:flex;align-items:center;gap:14px;margin-bottom:18px}

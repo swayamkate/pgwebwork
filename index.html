@@ -328,6 +328,42 @@
       </div>
     </div>
 
+    <!-- Quick Actions -->
+    <div class="card">
+      <div class="card-head">
+        <h2>Quick Actions</h2>
+        <span class="muted-sm">Bulk operations</span>
+      </div>
+      <div class="owner-actions" id="owner-actions"></div>
+    </div>
+
+    <!-- Security Deposits -->
+    <div class="card">
+      <div class="card-head">
+        <h2>Security Deposits</h2>
+        <span class="muted-sm" id="deposit-summary"></span>
+      </div>
+      <div id="deposit-list"></div>
+    </div>
+
+    <!-- PG Rules -->
+    <div class="card">
+      <div class="card-head">
+        <h2>PG House Rules</h2>
+        <button class="link-btn" type="button" data-act="edit-rules">Edit rules</button>
+      </div>
+      <div id="rules-display"></div>
+    </div>
+
+    <!-- Data Management -->
+    <div class="card">
+      <div class="card-head">
+        <h2>Data Management</h2>
+        <span class="muted-sm">Backup, export, or reset</span>
+      </div>
+      <div class="owner-actions" id="data-actions"></div>
+    </div>
+
     <div class="card" id="access-card">
       <div class="card-head">
         <h2>Account &amp; access</h2>
@@ -737,6 +773,26 @@
     <div class="dlg-foot">
       <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-resolve-complaint">Cancel</button>
       <button class="btn-primary btn-sm" type="submit">Save status</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- PG HOUSE RULES -->
+<dialog class="dlg dlg-wide" id="dlg-rules">
+  <form class="dlg-card" id="form-rules">
+    <h3>PG House Rules</h3>
+    <p class="dlg-sub">Set rules that will appear on receipts and can be shared with tenants.</p>
+    <div class="form-grid">
+      <label class="field span-2"><span>Visiting hours <i class="field-opt">optional</i></span><input id="ru-visit" maxlength="80" placeholder="e.g. 8 AM to 10 PM" /></label>
+      <label class="field span-2"><span>Quiet hours <i class="field-opt">optional</i></span><input id="ru-quiet" maxlength="80" placeholder="e.g. 11 PM to 6 AM" /></label>
+      <label class="field span-2"><span>Guest policy <i class="field-opt">optional</i></span><input id="ru-guest" maxlength="120" placeholder="e.g. Guests allowed till 10 PM, inform security" /></label>
+      <label class="field span-2"><span>Lockout time <i class="field-opt">optional</i></span><input id="ru-lock" maxlength="80" placeholder="e.g. Gate locked at 11 PM" /></label>
+      <label class="field span-2"><span>Other rules <i class="field-opt">optional</i></span><textarea id="ru-other" maxlength="300" rows="3" placeholder="e.g. No smoking, maintain cleanliness, report issues immediately"></textarea></label>
+    </div>
+    <p class="auth-error" id="ru-err" hidden></p>
+    <div class="dlg-foot">
+      <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-rules">Cancel</button>
+      <button class="btn-primary btn-sm" type="submit">Save rules</button>
     </div>
   </form>
 </dialog>

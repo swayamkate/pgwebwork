@@ -21,6 +21,7 @@
       expenses: [],
       rates: [],
       complaints: [],
+      rules: {},
       owner: { name: "", phone: "", address: "", upiId: "", pgStartDate: "" },
       settings: defaultSettings(),
       cycle: cycleId()
@@ -212,6 +213,16 @@
         address: clean(raw.owner.address, 120),
         upiId: clean(raw.owner.upiId, 60),
         pgStartDate: clean(raw.owner.pgStartDate, 24)
+      };
+    }
+
+    if (raw.rules && typeof raw.rules === "object") {
+      out.rules = {
+        visiting: clean(raw.rules.visiting, 80),
+        quiet: clean(raw.rules.quiet, 80),
+        guests: clean(raw.rules.guests, 120),
+        lockout: clean(raw.rules.lockout, 80),
+        other: clean(raw.rules.other, 300)
       };
     }
 
@@ -991,6 +1002,19 @@
         pgStartDate: clean(data.pgStartDate, 24)
       };
       log("in", "Owner details updated", name);
+      save();
+      return { ok: true };
+    },
+
+    setRules: function (data) {
+      state.rules = {
+        visiting: clean(data.visiting, 80),
+        quiet: clean(data.quiet, 80),
+        guests: clean(data.guests, 120),
+        lockout: clean(data.lockout, 80),
+        other: clean(data.other, 300)
+      };
+      log("in", "PG house rules updated", "");
       save();
       return { ok: true };
     },
