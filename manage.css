@@ -188,6 +188,21 @@ button.bed-add:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 }
 .imp-paste:focus{outline:none;border-color:var(--brand);background:var(--surface);box-shadow:0 0 0 4px var(--ring)}
 
+/* Template downloads */
+.imp-templates{margin-top:16px}
+.imp-template-btns{display:flex;gap:10px;flex-wrap:wrap}
+.imp-examples{margin-top:12px}
+.imp-examples summary{user-select:none}
+.imp-example-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.imp-example-card{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.imp-example-card b{display:block;font-size:12px;margin-bottom:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.imp-example-code{
+  font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;line-height:1.6;
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:10px 12px;overflow-x:auto;white-space:pre;color:var(--text);margin:0
+}
+@media (max-width:640px){.imp-example-grid{grid-template-columns:1fr}}
+
 .imp-chips{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
 .imp-chip{
   flex:1 1 96px;border:1px solid var(--border);border-radius:12px;

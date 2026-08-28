@@ -461,6 +461,35 @@
 
       <p class="auth-error" id="imp-err" hidden></p>
 
+      <!-- Demo templates -->
+      <div class="imp-templates" id="imp-templates">
+        <p class="imp-lead" style="margin-top:16px;margin-bottom:10px"><b>Don't have a sheet ready?</b> Download a template and fill it in:</p>
+        <div class="imp-template-btns">
+          <button class="btn-ghost btn-sm" type="button" data-act="imp-tpl-rooms">⬇ Rooms & Tenants template</button>
+          <button class="btn-ghost btn-sm" type="button" data-act="imp-tpl-expenses">⬇ Expenses template</button>
+        </div>
+        <details class="imp-examples" style="margin-top:14px">
+          <summary style="cursor:pointer;font-size:12.5px;color:var(--muted)">See what the data should look like</summary>
+          <div class="imp-example-grid">
+            <div class="imp-example-card">
+              <b>Rooms & Tenants</b>
+              <pre class="imp-example-code">Room\tBed\tTenant\tPhone\tJoined\tRent\tPaid\tNote
+101\tA\tSakshi\t9876543210\t2025-01-15\t5000\tYes\t
+101\tB\tAmruta\t9876543211\t2025-02-01\t5000\tYes\t
+102\tA\tPriya\t9876543212\t2025-03-10\t5500\tNo\tNotice period
+102\tB\t\t\t\t5500\t\tVacant</pre>
+            </div>
+            <div class="imp-example-card">
+              <b>Expenses</b>
+              <pre class="imp-example-code">Date\tCategory\tAmount\tNote
+2026-08-01\tElectricity\t8500\tAugust bill
+2026-08-05\tInternet\t1200\tMonthly fiber
+2026-08-10\tStaff salary\t6000\tCleaning staff</pre>
+            </div>
+          </div>
+        </details>
+      </div>
+
       <div class="dlg-foot">
         <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-import">Cancel</button>
         <button class="btn-primary btn-sm" type="button" data-act="imp-read">Read the sheet</button>

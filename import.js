@@ -734,8 +734,8 @@
 
     var header = findHeader(rows);
     if (header.hits < 2) {
-      fail("The column names could not be recognised. The sheet needs a header row with at least a room number and a tenant name, " +
-        "or a category and an amount for expenses.");
+      fail("Could not find matching columns. Your sheet needs headers like \"Room\", \"Tenant\", \"Rent\" for rooms, " +
+        "or \"Date\", \"Category\", \"Amount\" for expenses. Download a template below to see the format.");
       return;
     }
 
@@ -749,7 +749,8 @@
     };
 
     if (!current.kind) {
-      fail("That sheet was read, but it does not look like rooms and tenants or a list of expenses.");
+      fail("That sheet was read but does not match rooms/tenants or expenses. " +
+        "Make sure your columns include \"Room\" + \"Tenant\" for rooms, or \"Category\" + \"Amount\" for expenses.");
       current = null;
       return;
     }
@@ -1084,6 +1085,51 @@
     drop.classList.remove("is-over");
     var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
     if (file) { el("imp-err").hidden = true; readFile(file); }
+  });
+
+  /* ---------- template downloads ---------- */
+
+  function csvDownload(filename, rows) {
+    var csv = "\uFEFF" + rows.map(function (r) {
+      return r.map(function (c) {
+        return '"' + String(c == null ? "" : c).replace(/"/g, '""') + '"';
+      }).join(",");
+    }).join("\r\n");
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    a.download = filename;
+    a.click();
+  }
+
+  function downloadTemplate(kind) {
+    if (kind === "rooms") {
+      csvDownload("pg-rooms-template.csv", [
+        ["Room", "Bed", "Tenant", "Phone", "Joined", "Rent", "Paid", "Note"],
+        ["101", "A", "Sakshi Hari Ram", "9876543210", "2025-01-15", "5000", "Yes", ""],
+        ["101", "B", "Amruta Patil", "9876543211", "2025-02-01", "5000", "Yes", ""],
+        ["102", "A", "Priya Sharma", "9876543212", "2025-03-10", "5500", "No", "Notice period"],
+        ["102", "B", "", "", "", "5500", "", "Vacant"],
+        ["201", "A", "Neha Gupta", "9876543213", "2025-04-01", "6000", "Yes", "AC room"],
+        ["201", "B", "Kajal Jain", "9876543214", "2025-05-15", "6000", "No", ""]
+      ]);
+    } else {
+      csvDownload("pg-expenses-template.csv", [
+        ["Date", "Category", "Amount", "Note"],
+        ["2026-08-01", "Electricity", "8500", "August bill"],
+        ["2026-08-05", "Internet", "1200", "Monthly fiber"],
+        ["2026-08-10", "Staff salary", "6000", "Cleaning staff"],
+        ["2026-08-15", "Maintenance", "2500", "Plumbing repair"],
+        ["2026-08-20", "Water", "1500", "Tank cleaning"]
+      ]);
+    }
+  }
+
+  /* Wire up template download buttons */
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-act]");
+    if (!btn) { return; }
+    if (btn.dataset.act === "imp-tpl-rooms") { downloadTemplate("rooms"); return; }
+    if (btn.dataset.act === "imp-tpl-expenses") { downloadTemplate("expenses"); return; }
   });
 
   /* Exported for testing and for anything else that wants to reuse the parser.
