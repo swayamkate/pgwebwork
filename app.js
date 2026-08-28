@@ -241,6 +241,178 @@ function renderFeed() {
   }).join("");
 }
 
+/* ---------- dashboard graphs ---------- */
+
+function monthKey() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+}
+
+function renderGraph() {
+  const rooms = PGStore.state().rooms;
+  const expenses = PGStore.state().expenses || [];
+  const mk = monthKey();
+
+  /* Build last 6 months of data */
+  const months = [];
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+    const label = d.toLocaleDateString("en-IN", { month: "short" });
+
+    /* Count collected rent for this month */
+    let collected = 0;
+    let expected = 0;
+    rooms.forEach((room) => {
+      room.beds.forEach((bed) => {
+        if (!bed || !bed.joined) return;
+        const rent = PGStore.effectiveRent(room, bed);
+        const joinedKey = bed.joined.slice(0, 7);
+        if (joinedKey <= key) {
+          expected += rent;
+          if (isArray(bed.paidMonths) && bed.paidMonths.indexOf(key) !== -1) {
+            collected += rent;
+          }
+        }
+      });
+    });
+
+    /* Count expenses for this month */
+    const exp = expenses.filter((x) => String(x.date).slice(0, 7) === key)
+      .reduce((s, x) => s + x.amount, 0);
+
+    months.push({ key, label, collected, expected, expenses: exp });
+  }
+
+  const maxVal = Math.max(...months.map((m) => Math.max(m.collected, m.expected, m.expenses)), 1);
+  const barW = 32;
+  const gap = 16;
+  const chartH = 140;
+  const chartW = months.length * (barW * 2 + gap + 8) + 40;
+  const totalCollected = months.reduce((s, m) => s + m.collected, 0);
+
+  el("graph-total").textContent = totalCollected > 0
+    ? "Total: " + money(totalCollected) + " (6 months)"
+    : "Last 6 months";
+
+  el("chart-container").innerHTML = `
+    <svg viewBox="0 0 ${chartW} ${chartH + 30}" width="100%" height="auto" style="min-width:${chartW}px;display:block">
+      <!-- Grid lines -->
+      ${[0, 0.25, 0.5, 0.75, 1].map((pct) => {
+        const y = chartH - pct * chartH;
+        return `<line x1="30" y1="${y}" x2="${chartW - 10}" y2="${y}" stroke="var(--border)" stroke-width="0.5" />
+                <text x="26" y="${y + 4}" text-anchor="end" fill="var(--faint)" font-size="9">${pct === 0 ? "" : money(maxVal * pct)}</text>`;
+      }).join("")}
+      ${months.map((m, i) => {
+        const x = 36 + i * (barW * 2 + gap + 8);
+        const collectedH = (m.collected / maxVal) * chartH;
+        const expectedH = (m.expected / maxVal) * chartH;
+        const expH = (m.expenses / maxVal) * chartH;
+        return `
+          <!-- Expected (gray) -->
+          <rect x="${x}" y="${chartH - expectedH}" width="${barW}" height="${expectedH}" rx="4" fill="var(--surface-3)" />
+          <!-- Collected (blue) -->
+          <rect x="${x}" y="${chartH - collectedH}" width="${barW}" height="${collectedH}" rx="4" fill="var(--brand)" opacity="0.9" />
+          <!-- Expenses (amber) -->
+          <rect x="${x + barW + 4}" y="${chartH - expH}" width="${barW}" height="${expH}" rx="4" fill="var(--amber)" opacity="0.8" />
+          <!-- Month label -->
+          <text x="${x + barW + 2}" y="${chartH + 18}" text-anchor="middle" fill="var(--muted)" font-size="11" font-weight="500">${esc(m.label)}</text>
+          ${m.key === mk ? `<circle cx="${x + barW}" cy="${chartH + 26}" r="2.5" fill="var(--brand)" />` : ""}`;
+      }).join("")}
+    </svg>
+    <div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--muted)">
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:var(--surface-3);display:inline-block"></span>Expected</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:var(--brand);display:inline-block"></span>Collected</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:var(--amber);display:inline-block"></span>Expenses</span>
+    </div>`;
+}
+
+function renderRentStatus() {
+  const list = tenants();
+  const paid = list.filter((t) => t.paid).length;
+  const overdue = list.filter((t) => !t.paid && new Date().getDate() > 10).length;
+  const due = list.length - paid - overdue;
+  const total = list.length;
+  const expected = list.reduce((s, t) => s + t.rent, 0);
+  const collected = list.filter((t) => t.paid).reduce((s, t) => s + t.rent, 0);
+  const pending = expected - collected;
+
+  if (!total) {
+    el("rent-status-bars").innerHTML = '<p class="muted-sm">No tenants yet.</p>';
+    return;
+  }
+
+  const barH = 8;
+  const segments = [
+    { label: "Paid", count: paid, color: "var(--green)", pct: (paid / total) * 100 },
+    { label: "Due", count: due, color: "var(--amber)", pct: (due / total) * 100 },
+    { label: "Overdue", count: overdue, color: "var(--red)", pct: (overdue / total) * 100 }
+  ].filter((s) => s.count > 0);
+
+  el("rent-status-bars").innerHTML = `
+    <div style="margin-bottom:16px">
+      <div style="display:flex;height:${barH}px;border-radius:99px;overflow:hidden;background:var(--surface-3)">
+        ${segments.map((s) => `<div style="width:${s.pct}%;background:${s.color}"></div>`).join("")}
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      ${segments.map((s) => `
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500">
+            <span style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0"></span>
+            ${s.label}
+          </span>
+          <span style="font-size:13px;font-weight:600">${s.count} tenant${s.count !== 1 ? "s" : ""}</span>
+        </div>`).join("")}
+    </div>
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:13px">
+      <span style="color:var(--muted)">Expected this month</span>
+      <span style="font-weight:600">${money(expected)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:6px">
+      <span style="color:var(--muted)">Collected</span>
+      <span style="font-weight:600;color:var(--green)">${money(collected)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:6px">
+      <span style="color:var(--muted)">Pending</span>
+      <span style="font-weight:600;color:${pending > 0 ? "var(--amber)" : "var(--green)"}">${money(pending)}</span>
+    </div>`;
+}
+
+function renderExpDashboard() {
+  const x = expenseSummary();
+  if (!x.list.length) {
+    el("exp-dashboard").innerHTML = '<p class="muted-sm">No expenses logged yet.</p>';
+    el("exp-summary").textContent = "";
+    return;
+  }
+  el("exp-summary").textContent = x.monthTotal > 0 ? "This month: " + money(x.monthTotal) : "";
+  const topCats = Object.keys(x.byCat || {}).length > 0
+    ? Object.entries(x.byCat).sort((a, b) => b[1] - a[1]).slice(0, 4)
+    : [];
+  /* Build a simple breakdown */
+  const allByCat = {};
+  x.list.forEach((e) => { allByCat[e.category] = (allByCat[e.category] || 0) + e.amount; });
+  const sorted = Object.entries(allByCat).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const maxCat = sorted.length ? sorted[0][1] : 1;
+
+  el("exp-dashboard").innerHTML = sorted.map(([cat, amt]) => `
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px">
+        <span style="color:var(--muted);font-weight:500">${esc(cat)}</span>
+        <span style="font-weight:600">${money(amt)}</span>
+      </div>
+      <div style="height:5px;border-radius:99px;background:var(--surface-3);overflow:hidden">
+        <div style="height:100%;width:${(amt / maxCat) * 100}%;border-radius:99px;background:var(--amber);opacity:0.7"></div>
+      </div>
+    </div>`).join("") + `
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:12.5px">
+      <span style="color:var(--muted)">Total all time</span>
+      <span style="font-weight:600">${money(x.allTotal)}</span>
+    </div>`;
+}
+
 function renderRooms() {
   const rooms = PGStore.state().rooms;
 
@@ -681,8 +853,11 @@ function renderAll() {
   el("brand-prop").textContent = s.property || "Name your property";
   el("setup").hidden = !PGStore.isEmpty();
   renderStats();
+  renderGraph();
+  renderRentStatus();
   renderFloors();
   renderFeed();
+  renderExpDashboard();
   renderRooms();
   renderTenants();
   renderRent();

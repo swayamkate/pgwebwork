@@ -129,7 +129,23 @@
 
     <div class="stats" id="stats"></div>
 
+    <!-- Monthly collection graph -->
+    <div class="card" id="graph-card" style="margin-bottom:18px">
+      <div class="card-head">
+        <h2>Monthly Collection</h2>
+        <span class="muted-sm" id="graph-total"></span>
+      </div>
+      <div id="chart-container" style="width:100%;overflow-x:auto"></div>
+    </div>
+n    <!-- Rent status + Occupancy -->
     <div class="cols">
+      <div class="card">
+        <div class="card-head">
+          <h2>Rent Status</h2>
+        </div>
+        <div id="rent-status-bars"></div>
+      </div>
+
       <div class="card">
         <div class="card-head">
           <h2 id="occ-head">Occupancy by floor</h2>
@@ -137,12 +153,22 @@
         </div>
         <div class="bars" id="floor-bars"></div>
       </div>
+    </div>
 
+    <div class="cols" style="margin-top:18px">
       <div class="card">
         <div class="card-head">
           <h2>Recent activity</h2>
         </div>
         <ul class="feed" id="feed"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Expenses</h2>
+          <span class="muted-sm" id="exp-summary"></span>
+        </div>
+        <div id="exp-dashboard"></div>
       </div>
     </div>
 
