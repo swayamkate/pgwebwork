@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useState, useEffect } from "react";
-import { Save, Building2, Calendar, Info } from "lucide-react";
+import { Save, Building2, Calendar, Info, IndianRupee, FileText } from "lucide-react";
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -37,119 +36,123 @@ export default function SettingsPage() {
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading settings…</div>;
+    return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading…</div>;
   }
 
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-sm text-muted-foreground">Configure your PG Manager application</p>
+        <h1 className="text-2xl font-bold">Owner Settings</h1>
+        <p className="text-sm text-muted-foreground">Configure your PG property and business details</p>
       </div>
 
-      {/* Property Settings */}
+      {/* ─── PG Starting Date (primary — shown first) ─── */}
+      <div className="bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent border border-primary/20 rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-1">
+          <Calendar className="w-5 h-5 text-primary" />
+          <h2 className="font-semibold">PG Starting Date</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          All financial reports, rent tracking, and expenses start from this date. Set it once when you begin operations.
+        </p>
+
+        <div className="max-w-xs">
+          <label className="text-sm font-medium">When did your PG start?</label>
+          <input type="date" value={settings.pg_start_date || ""}
+            onChange={(e) => update("pg_start_date", e.target.value)}
+            className="w-full mt-1.5 px-3 py-2 border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+        </div>
+
+        {settings.pg_start_date && (
+          <div className="flex items-center gap-4 mt-4 p-4 bg-background rounded-lg border">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Calendar className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm">
+                Running for <span className="font-bold text-primary text-lg">{calculateDuration(settings.pg_start_date)}</span>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Since {new Date(settings.pg_start_date).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ─── Property Details ─── */}
       <div className="bg-card border rounded-xl p-6">
-        <h2 className="font-semibold mb-4 flex items-center gap-2">
-          <Building2 className="w-4 h-4" /> Property Details
-        </h2>
+        <div className="flex items-center gap-2 mb-4">
+          <Building2 className="w-4 h-4 text-muted-foreground" />
+          <h2 className="font-semibold">Property Details</h2>
+        </div>
         <div className="space-y-4">
           <div>
             <label className="text-sm font-medium">Hostel / PG Name</label>
             <input type="text" value={settings.hostel_name || ""}
               onChange={(e) => update("hostel_name", e.target.value)}
-              className="w-full mt-1 px-3 py-2 border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full mt-1.5 px-3 py-2 border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="e.g. Sunshine PG" />
           </div>
           <div>
             <label className="text-sm font-medium">Address</label>
             <textarea value={settings.address || ""} rows={2}
               onChange={(e) => update("address", e.target.value)}
-              className="w-full mt-1 px-3 py-2 border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-2 focus:ring-ring" />
+              className="w-full mt-1.5 px-3 py-2 border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium">Contact Phone</label>
               <input type="tel" value={settings.contact_phone || ""}
                 onChange={(e) => update("contact_phone", e.target.value)}
-                className="w-full mt-1 px-3 py-2 border rounded-lg bg-background text-sm" />
+                className="w-full mt-1.5 px-3 py-2 border rounded-lg bg-background text-sm" />
             </div>
             <div>
               <label className="text-sm font-medium">Contact Email</label>
               <input type="email" value={settings.contact_email || ""}
                 onChange={(e) => update("contact_email", e.target.value)}
-                className="w-full mt-1 px-3 py-2 border rounded-lg bg-background text-sm" />
+                className="w-full mt-1.5 px-3 py-2 border rounded-lg bg-background text-sm" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* PG Start Date */}
-      <div className="bg-gradient-to-r from-primary/5 to-transparent border border-primary/20 rounded-xl p-6">
-        <h2 className="font-semibold mb-2 flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-primary" /> PG Starting Date
-        </h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          All financial data, reports, and calculations start from this date. Set it once when you begin.
-        </p>
-        <div className="space-y-4">
-          <div className="max-w-xs">
-            <label className="text-sm font-medium">When did your PG start?</label>
-            <input type="date" value={settings.pg_start_date || ""}
-              onChange={(e) => update("pg_start_date", e.target.value)}
-              className="w-full mt-1 px-3 py-2 border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-          </div>
-          {settings.pg_start_date && (
-            <div className="flex items-center gap-4 p-4 bg-background rounded-lg border">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Calendar className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm">
-                  Running for <span className="font-bold text-primary text-lg">{calculateDuration(settings.pg_start_date)}</span>
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Since {new Date(settings.pg_start_date).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
-                  {settings.hostel_name ? ` — ${settings.hostel_name}` : ""}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Rent Settings */}
+      {/* ─── Rent Settings ─── */}
       <div className="bg-card border rounded-xl p-6">
-        <h2 className="font-semibold mb-4">Rent Settings</h2>
+        <div className="flex items-center gap-2 mb-4">
+          <IndianRupee className="w-4 h-4 text-muted-foreground" />
+          <h2 className="font-semibold">Rent Settings</h2>
+        </div>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium">Default Due Date (day of month)</label>
               <input type="number" min="1" max="31" value={settings.rent_due_date || "5"}
                 onChange={(e) => update("rent_due_date", e.target.value)}
-                className="w-full mt-1 px-3 py-2 border rounded-lg bg-background text-sm" />
+                className="w-full mt-1.5 px-3 py-2 border rounded-lg bg-background text-sm" />
             </div>
             <div>
               <label className="text-sm font-medium">Currency</label>
-              <input type="text" value={settings.currency || "INR"} disabled
-                className="w-full mt-1 px-3 py-2 border rounded-lg bg-background text-sm opacity-50" />
+              <input type="text" value="INR (₹)" disabled
+                className="w-full mt-1.5 px-3 py-2 border rounded-lg bg-background text-sm opacity-50" />
             </div>
           </div>
           <div>
             <label className="text-sm font-medium">Receipt Number Prefix</label>
             <input type="text" value={settings.receipt_prefix || "RCP"}
               onChange={(e) => update("receipt_prefix", e.target.value)}
-              className="w-full mt-1 px-3 py-2 border rounded-lg bg-background text-sm"
+              className="w-full mt-1.5 px-3 py-2 border rounded-lg bg-background text-sm"
               placeholder="RCP" />
           </div>
         </div>
       </div>
 
-      {/* Save */}
+      {/* ─── Save ─── */}
       <div className="flex justify-end">
         <button onClick={handleSave} disabled={saving}
           className="inline-flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
           <Save className="w-4 h-4" />
-          {saving ? "Saving…" : saved ? "Saved!" : "Save Settings"}
+          {saving ? "Saving…" : saved ? "✓ Saved" : "Save Settings"}
         </button>
       </div>
     </div>

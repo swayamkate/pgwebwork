@@ -22,7 +22,7 @@ const NAV_ITEMS = [
   { label: "Receipts", href: "/receipts", icon: Receipt },
   { label: "Audit Log", href: "/audit", icon: ClipboardList },
   { label: "Notifications", href: "/notifications", icon: Bell },
-  { label: "Settings", href: "/settings", icon: Settings },
+  { label: "Owner", href: "/settings", icon: Settings },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
