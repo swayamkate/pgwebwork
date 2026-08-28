@@ -8,6 +8,7 @@ import {
   Building2, Upload, ClipboardList, Menu, X, ChevronDown,
   Sun, Moon, Search,
 } from "lucide-react";
+import CommandPalette from "@/components/command-palette";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -62,6 +63,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      <CommandPalette />
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -147,6 +149,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="lg:hidden text-muted-foreground"
           >
             <Menu className="w-5 h-5" />
+          </button>
+
+          {/* Search button */}
+          <button
+            onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true }))}
+            className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground border rounded-lg hover:bg-muted transition-colors"
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span>Search</span>
+            <kbd className="ml-1 px-1 py-0.5 rounded text-[10px] bg-muted border">⌘K</kbd>
           </button>
 
           <div className="flex-1" />

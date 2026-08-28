@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, IndianRupee } from "lucide-react";
+import { Plus, Trash2, IndianRupee, Download } from "lucide-react";
+import { exportExpensesToCSV } from "@/lib/export";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
@@ -87,10 +88,16 @@ export default function ExpensesPage() {
           <h1 className="text-2xl font-bold">Expenses</h1>
           <p className="text-sm text-muted-foreground">{expenses.length} expenses · {fmt(total)} total</p>
         </div>
-        <button onClick={() => setShowAdd(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90">
-          <Plus className="w-4 h-4" /> Add Expense
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => exportExpensesToCSV(expenses)}
+            className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm text-muted-foreground hover:bg-muted">
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+          <button onClick={() => setShowAdd(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90">
+            <Plus className="w-4 h-4" /> Add Expense
+          </button>
+        </div>
       </div>
 
       {/* Category breakdown */}

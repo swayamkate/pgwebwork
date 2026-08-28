@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, Phone, Mail, MoreHorizontal, ArrowUpDown, Eye, Edit, CreditCard, LogOut } from "lucide-react";
+import { Search, Plus, Phone, Mail, MoreHorizontal, ArrowUpDown, Eye, Edit, CreditCard, LogOut, Download } from "lucide-react";
+import { exportTenantsToCSV } from "@/lib/export";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
@@ -87,12 +88,18 @@ export default function TenantsPage() {
           <h1 className="text-2xl font-bold">Tenants</h1>
           <p className="text-sm text-muted-foreground">{tenants.length} total tenants</p>
         </div>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90"
-        >
-          <Plus className="w-4 h-4" /> Add Tenant
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => exportTenantsToCSV(filtered)}
+            className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm text-muted-foreground hover:bg-muted">
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90"
+          >
+            <Plus className="w-4 h-4" /> Add Tenant
+          </button>
+        </div>
       </div>
 
       {/* Filters */}

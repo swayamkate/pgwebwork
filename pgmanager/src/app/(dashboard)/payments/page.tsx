@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Plus, ArrowDownUp, Receipt } from "lucide-react";
+import { Search, Plus, ArrowDownUp, Receipt, Download } from "lucide-react";
+import { exportPaymentsToCSV } from "@/lib/export";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
@@ -83,12 +84,18 @@ export default function PaymentsPage() {
           <h1 className="text-2xl font-bold">Payments</h1>
           <p className="text-sm text-muted-foreground">{payments.length} payments · {fmt(totalFiltered)} total</p>
         </div>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90"
-        >
-          <Plus className="w-4 h-4" /> Record Payment
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => exportPaymentsToCSV(filtered)}
+            className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm text-muted-foreground hover:bg-muted">
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90"
+          >
+            <Plus className="w-4 h-4" /> Record Payment
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
