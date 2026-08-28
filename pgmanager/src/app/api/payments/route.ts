@@ -13,10 +13,15 @@ export async function GET(request: NextRequest) {
     const method = searchParams.get("method");
     const limit = parseInt(searchParams.get("limit") || "100");
 
+    // Get PG start date from settings
+    const startSetting = await prisma.setting.findUnique({ where: { key: "pg_start_date" } });
+    const pgStartDate = startSetting?.value || null;
+
     const where: any = { isReversed: false };
     if (tenantId) where.tenantId = tenantId;
     if (month) where.rentMonth = month;
     if (method) where.method = method;
+    if (pgStartDate) where.date = { gte: new Date(pgStartDate) };
 
     const payments = await prisma.payment.findMany({
       where,

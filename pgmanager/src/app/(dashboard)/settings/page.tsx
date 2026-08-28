@@ -84,26 +84,32 @@ export default function SettingsPage() {
       </div>
 
       {/* PG Start Date */}
-      <div className="bg-card border rounded-xl p-6">
-        <h2 className="font-semibold mb-4 flex items-center gap-2">
-          <Calendar className="w-4 h-4" /> PG Starting Date
+      <div className="bg-gradient-to-r from-primary/5 to-transparent border border-primary/20 rounded-xl p-6">
+        <h2 className="font-semibold mb-2 flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-primary" /> PG Starting Date
         </h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Set the date when your PG started operations. This is used for historical reports and tracking how long the business has been running.
+          All financial data, reports, and calculations start from this date. Set it once when you begin.
         </p>
         <div className="space-y-4">
-          <div>
+          <div className="max-w-xs">
             <label className="text-sm font-medium">When did your PG start?</label>
             <input type="date" value={settings.pg_start_date || ""}
               onChange={(e) => update("pg_start_date", e.target.value)}
               className="w-full mt-1 px-3 py-2 border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           {settings.pg_start_date && (
-            <div className="flex items-start gap-2 p-3 bg-primary/5 rounded-lg">
-              <Info className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-              <div className="text-sm">
-                <p className="text-muted-foreground">
-                  Your PG has been running for <span className="font-bold text-foreground">{calculateDuration(settings.pg_start_date)}</span> since {new Date(settings.pg_start_date).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.
+            <div className="flex items-center gap-4 p-4 bg-background rounded-lg border">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Calendar className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm">
+                  Running for <span className="font-bold text-primary text-lg">{calculateDuration(settings.pg_start_date)}</span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Since {new Date(settings.pg_start_date).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                  {settings.hostel_name ? ` — ${settings.hostel_name}` : ""}
                 </p>
               </div>
             </div>

@@ -32,6 +32,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [darkMode, setDarkMode] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userName, setUserName] = useState("User");
+  const [pgName, setPgName] = useState("");
 
   // Theme
   useEffect(() => {
@@ -48,11 +49,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     localStorage.setItem("pgTheme", next ? "dark" : "light");
   }
 
-  // Load user info and notifications
+  // Load user info, notifications, and PG name
   useEffect(() => {
     fetch("/api/notifications")
       .then((r) => r.json())
       .then((d) => setUnreadCount(d.unread || 0))
+      .catch(() => {});
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => { if (d.hostel_name) setPgName(d.hostel_name); })
       .catch(() => {});
   }, [pathname]);
 
@@ -84,8 +89,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Building2 className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h1 className="font-bold text-sm">PG Manager</h1>
-            <p className="text-xs text-muted-foreground">Finance & Management</p>
+            <h1 className="font-bold text-sm">{pgName || "PG Manager"}</h1>
+            <p className="text-xs text-muted-foreground">{pgName ? "Finance & Management" : "Set name in Settings"}</p>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}

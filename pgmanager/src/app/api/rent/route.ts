@@ -10,9 +10,18 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const month = searchParams.get("month") || getCurrentMonth();
 
+    // Get PG start date from settings
+    const startSetting = await prisma.setting.findUnique({ where: { key: "pg_start_date" } });
+    const pgStartDate = startSetting?.value || null;
+    const startDateFilter = pgStartDate ? { gte: new Date(pgStartDate) } : undefined;
+
     // Get all active assignments with their tenant and bed info
+    // Filter by PG start date: only show tenants who joined on or after the start date
     const assignments = await prisma.tenantAssignment.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        ...(startDateFilter ? { joiningDate: startDateFilter } : {}),
+      },
       include: {
         tenant: true,
         bed: { include: { room: true } },
@@ -72,13 +81,20 @@ export async function GET(request: NextRequest) {
     const dueCount = tenantRent.filter((t) => t.status === "DUE").length;
     const overdueCount = tenantRent.filter((t) => t.status === "OVERDUE").length;
 
-    // Month-over-month comparison (last 6 months)
+    // Month-over-month comparison (last 6 months, but not before PG start date)
     const monthHistory: { month: string; label: string; expected: number; collected: number; rate: number }[] = [];
     const now = new Date();
+    const pgStart = pgStartDate ? new Date(pgStartDate) : new Date("2020-01-01");
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       const label = d.toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+
+      // Skip months before PG start date
+      if (d < pgStart) {
+        monthHistory.push({ month: mk, label, expected: 0, collected: 0, rate: 0 });
+        continue;
+      }
 
       const rr = await prisma.rentRecord.findMany({ where: { month: mk } });
       const expected = rr.reduce((s, r) => s + Number(r.rentDue), 0);

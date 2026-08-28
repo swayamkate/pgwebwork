@@ -10,7 +10,12 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category");
     const month = searchParams.get("month");
 
+    // Get PG start date from settings
+    const startSetting = await prisma.setting.findUnique({ where: { key: "pg_start_date" } });
+    const pgStartDate = startSetting?.value || null;
+
     const where: any = {};
+    if (pgStartDate) where.date = { gte: new Date(pgStartDate) };
     if (category) where.category = category;
     if (month) {
       where.date = {

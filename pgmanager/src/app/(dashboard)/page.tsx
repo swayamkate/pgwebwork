@@ -62,7 +62,7 @@ export default function DashboardPage() {
     );
   }
 
-  const { occupancy: occ, financial: fin, rentStatus: rs, charts, tenantBreakdown, todayPayments, recentPayments, unmatchedTransactions } = data;
+  const { occupancy: occ, financial: fin, rentStatus: rs, charts, tenantBreakdown, todayPayments, recentPayments, unmatchedTransactions, pgStartDate } = data;
 
   // Who owes money (top items needing attention)
   const whoOwes = tenantBreakdown?.filter((t: any) => t.remaining > 0).slice(0, 8) || [];
@@ -79,6 +79,19 @@ export default function DashboardPage() {
         <div>
           <p className="text-xs text-muted-foreground uppercase tracking-wider">Today</p>
           <h1 className="text-2xl font-bold">{todayFormatted()}</h1>
+          {pgStartDate && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              PG active since {new Date(pgStartDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+              {' · '}{(() => {
+                const days = Math.floor((Date.now() - new Date(pgStartDate).getTime()) / (1000 * 60 * 60 * 24));
+                if (days < 30) return `${days} days`;
+                const months = Math.floor(days / 30);
+                const yrs = Math.floor(months / 12);
+                const rem = months % 12;
+                return yrs > 0 ? `${yrs}y ${rem}m` : `${months} months`;
+              })()}
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <button onClick={() => router.push("/payments")}

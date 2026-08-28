@@ -8,6 +8,11 @@ export async function GET() {
     await requireAuth();
     const month = getCurrentMonth();
 
+    // Get PG start date from settings
+    const startSetting = await prisma.setting.findUnique({ where: { key: "pg_start_date" } });
+    const pgStartDate = startSetting?.value || null;
+    const startFilter = pgStartDate ? { gte: new Date(pgStartDate) } : undefined;
+
     // Run all queries in parallel
     const [
       totalRooms,
@@ -26,10 +31,11 @@ export async function GET() {
       }),
       prisma.rentRecord.findMany({ where: { month } }),
       prisma.payment.findMany({
-        where: { isReversed: false },
+        where: { isReversed: false, ...(startFilter ? { date: startFilter } : {}) },
         orderBy: { date: "desc" },
       }),
       prisma.expense.findMany({
+        where: startFilter ? { date: startFilter } : {},
         orderBy: { date: "desc" },
       }),
       prisma.bankTransaction.count({
@@ -183,6 +189,7 @@ export async function GET() {
       todayPayments,
       recentPayments: recentWithNames,
       unmatchedTransactions: unmatchedTxns,
+      pgStartDate: pgStartDate || null,
     });
   } catch (error) {
     console.error("Dashboard error:", error);
