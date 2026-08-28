@@ -9,29 +9,71 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
     await requireAuth();
     const { id } = params;
 
-    const tenant = await prisma.tenant.findUnique({
-      where: { id },
-      include: {
-        assignments: {
-          include: {
-            bed: { include: { room: true } },
-            rentRecords: { orderBy: { month: "desc" }, take: 12 },
+    const [tenant, auditLogs] = await Promise.all([
+      prisma.tenant.findUnique({
+        where: { id },
+        include: {
+          assignments: {
+            include: {
+              bed: { include: { room: true } },
+              rentRecords: { orderBy: { month: "desc" } },
+            },
           },
+          payments: {
+            where: { isReversed: false },
+            orderBy: { date: "desc" },
+          },
+          aliases: true,
         },
-        payments: {
-          where: { isReversed: false },
-          orderBy: { date: "desc" },
-          take: 20,
-        },
-        aliases: true,
-      },
-    });
+      }),
+      prisma.auditLog.findMany({
+        where: { entityId: id },
+        include: { user: { select: { name: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      }),
+    ]);
 
     if (!tenant) {
       return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
     }
 
-    return NextResponse.json(tenant);
+    // Compute financial summary
+    const allPayments = tenant.payments.filter((p: any) => !p.isReversed);
+    const totalPaid = allPayments.reduce((s: number, p: any) => s + Number(p.amount), 0);
+
+    const currentAssignment = tenant.assignments.find((a: any) => a.isActive);
+    const monthlyRent = currentAssignment ? Number(currentAssignment.monthlyRent) : 0;
+
+    // Count paid months from rent records
+    const paidMonths = tenant.assignments.flatMap((a: any) =>
+      a.rentRecords.filter((r: any) => r.status === "PAID" || r.status === "ADVANCE")
+    ).length;
+    const totalMonths = tenant.assignments.flatMap((a: any) => a.rentRecords).length;
+
+    return NextResponse.json({
+      ...tenant,
+      _summary: {
+        totalPaid,
+        monthlyRent,
+        totalPayments: allPayments.length,
+        paidMonths,
+        totalMonths,
+        outstanding: currentAssignment
+          ? Math.max(0, monthlyRent - (currentAssignment.rentRecords[0]
+              ? Number(currentAssignment.rentRecords[0].amountPaid) : 0))
+          : 0,
+      },
+      _auditLogs: auditLogs.map((l: any) => ({
+        id: l.id,
+        action: l.action,
+        entity: l.entity,
+        user: l.user?.name || "System",
+        previousValue: l.previousValue,
+        newValue: l.newValue,
+        createdAt: l.createdAt,
+      })),
+    });
   } catch (error) {
     return NextResponse.json({ error: "Failed to load tenant" }, { status: 500 });
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Search, Plus, Phone, Mail, MoreHorizontal, ArrowUpDown, Eye, Edit, CreditCard, LogOut } from "lucide-react";
 
 function fmt(n: number) {
@@ -20,6 +21,7 @@ export default function TenantsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showAdd, setShowAdd] = useState(false);
+  const router = useRouter();
 
   // Add tenant form
   const [form, setForm] = useState({ name: "", phone: "", email: "", emergencyContact: "", notes: "" });
@@ -137,6 +139,7 @@ export default function TenantsPage() {
                   <th className="px-4 py-3 font-medium">Monthly Rent</th>
                   <th className="px-4 py-3 font-medium">Outstanding</th>
                   <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium"></th>
                 </tr>
               </thead>
               <tbody>
@@ -148,7 +151,9 @@ export default function TenantsPage() {
                           {t.name.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-medium">{t.name}</p>
+                          <button onClick={() => router.push(`/tenants/${t.id}`)} className="font-medium hover:text-primary hover:underline text-left">
+                            {t.name}
+                          </button>
                           {t.email && <p className="text-xs text-muted-foreground">{t.email}</p>}
                         </div>
                       </div>
@@ -165,6 +170,12 @@ export default function TenantsPage() {
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[t.status] || ""}`}>
                         {t.status?.replace("_", " ")}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button onClick={() => router.push(`/tenants/${t.id}`)}
+                        className="text-xs text-primary hover:underline font-medium">
+                        View →
+                      </button>
                     </td>
                   </tr>
                 ))}
