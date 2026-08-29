@@ -236,8 +236,8 @@ h2{font-size:16.5px;letter-spacing:-.018em;font-weight:650;line-height:1.35;marg
 .bed-notice{background:var(--amber-soft);border-color:color-mix(in srgb, var(--amber) 30%, transparent);color:var(--amber)}
 
 /* ---------- table ---------- */
-.table-card{padding:0;overflow:visible}
-.table-scroll{overflow:visible}
+.table-card{padding:0;overflow:hidden}
+.table-scroll{overflow-x:auto}
 .table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:680px}
 .table th{
   text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.07em;
@@ -553,7 +553,7 @@ h2{font-size:16.5px;letter-spacing:-.018em;font-weight:650;line-height:1.35;marg
 /* ========== PERFORMANCE ========== */
 /* GPU-accelerate animated properties for smoother 60fps rendering. */
 .stat,.room,.bed,.card,.btn-primary,.btn-ghost,.icon-btn,.oa-card,.tab,.pill,
-.topbar,.tabs,.view,.auth-left,.auth-right,.auth-feature{
+.topbar,.tabs,.auth-left,.auth-right,.auth-feature{
   will-change:transform
 }
 /* containment tells the browser this element's internals don't affect layout outside */
@@ -597,8 +597,7 @@ html{
   }
   /* Better mobile dialog sizing */
   .dlg-card{padding:20px;border-radius:18px;max-height:90vh;overflow-y:auto}
-  /* Prevent horizontal scroll on mobile */
-  body{overflow-x:hidden}
+  /* Let the browser handle scroll naturally on mobile */
   /* Smooth page transitions */
   .view.is-active{animation:rise .2s ease both}
   /* Better dropdown positioning on mobile */
