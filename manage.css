@@ -260,7 +260,7 @@ button.bed-add:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 
   /* The header runs out of room once the property button is added, so the
      wordmark gives way to the logo on phones. */
-  .brand-text{display:none}
+  .brand-text small{display:none}
   .topbar-right{gap:8px}
   .topbar-right .btn-ghost{padding:9px 12px}
   .form-grid{grid-template-columns:1fr}
