@@ -682,7 +682,8 @@ function renderComplaints() {
   if (progEl) { progEl.textContent = prog; }
   var resEl = el("comp-count-res");
   if (resEl) { resEl.textContent = res; }
-n  var list = el("comp-list");
+
+  var list = el("comp-list");
   var empty = el("comp-empty");
   if (!list) return;
 
@@ -2063,7 +2064,8 @@ function boot(session) {
   /* Render from localStorage instantly (fast path) */
   renderAll();
   show(location.hash.slice(1) || "dashboard");
-n  /* Connect to Supabase data storage if available (async, non-blocking). */
+
+  /* Connect to Supabase data storage if available (async, non-blocking). */
   if (window.SupabaseStorage) {
     SupabaseStorage.init(accountId);
     if (SupabaseStorage.isAvailable()) {
