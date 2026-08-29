@@ -1,10 +1,11 @@
-﻿const CACHE_NAME = "pg-manager-cache-v2";
+﻿const CACHE_NAME = "pg-manager-cache-v3";
 const ASSETS = [
   "./",
   "./index.html",
   "./login.html",
   "./signup.html",
   "./styles.css",
+  "./mobile-auth.css",
   "./manage.css",
   "./config.js",
   "./auth.js",
