@@ -1,9 +1,7 @@
-﻿const CACHE_NAME = "pg-manager-cache-v3";
+﻿const CACHE_NAME = "pg-manager-cache-v4";
 const ASSETS = [
   "./",
-  "./index.html",
-  "./login.html",
-  "./signup.html",
+
   "./styles.css",
   "./mobile-auth.css",
   "./manage.css",
@@ -17,8 +15,7 @@ const ASSETS = [
   "./account.js",
   "./sheets.js",
   "./supabase-storage.js",
-  "./manifest.json",
-  "./favicon.svg"
+  "./manifest.json"
 ];
 
 self.addEventListener("install", (e) => {
@@ -51,6 +48,6 @@ self.addEventListener("fetch", (e) => {
         }
         return res;
       })
-      .catch(() => caches.match(e.request).then((cached) => cached || caches.match("./index.html")))
+      .catch(() => caches.match(e.request).then((cached) => cached || caches.match("./")))
   );
 });
