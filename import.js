@@ -336,20 +336,20 @@
   /* ---------- understanding the columns ---------- */
 
   var FIELDS = {
-    room:     { label: "Room",       aliases: ["room", "roomno", "roomnumber", "roomname", "rm", "rooms", "roomno.", "room_name", "room_number", "room_number", "roomid", "room_id", "flat", "flatno", "flatnumber", "unit", "unitno", "apartment", "apt", "houseno", "house_number", "pg_room", "bedno", "bed_no", "bed_no.", "bednumber", "bed_number", "bed no.", "bed no", "bedno.", "customer id", "customerid", "customer_id"] },
+    room:     { label: "Room",       aliases: ["room", "roomno", "roomnumber", "roomname", "rm", "rooms", "roomno", "room_name", "room_number", "room_number", "roomid", "room_id", "flat", "flatno", "flatnumber", "unit", "unitno", "apartment", "apt", "houseno", "house_number", "pg_room", "bedno", "bed_no", "bed_no", "bednumber", "bed_number", "customerid", "customer_id", "bedno1"] },
     floor:    { label: "Floor",      aliases: ["floor", "flr", "level", "storey", "story", "floor_no", "floorno", "floor_number"] },
-    rent:     { label: "Rent",       aliases: ["rent", "rentperbed", "monthlyrent", "rentamount", "roomrent", "price", "fees", "fee", "rent_per_bed", "monthly_rent", "rent_amount", "room_rent", "rental", "rentprice", "rent_fee", "amount_per_bed", "per_bed", "bed_rent", "bedrent", "monthly", "monthly_fee", "plan rent", "plan_rent", "planrent", "per day"] },
+    rent:     { label: "Rent",       aliases: ["rent", "rentperbed", "monthlyrent", "rentamount", "roomrent", "price", "fees", "fee", "rent_per_bed", "monthly_rent", "rent_amount", "room_rent", "rental", "rentprice", "rent_fee", "amount_per_bed", "per_bed", "bed_rent", "bedrent", "monthly", "monthly_fee", "planrent", "plan_rent", "perday", "per_day", "dueamountmonths", "dueamountdays", "dueamount"] },
     bed:      { label: "Bed",        aliases: ["bed", "bedletter", "bedname", "bed_name", "bedid", "bed_id", "cot", "berth", "bunk"] },
     tenant:   { label: "Tenant",     aliases: ["tenant", "tenantname", "name", "fullname", "student", "occupant", "person", "boarder", "guest", "tenant_name", "tenantname", "occupant_name", "guest_name", "resident", "member", "lodger", "payer", "customer", "client", "user", "tenant_id"] },
     phone:    { label: "Phone",      aliases: ["phone", "phoneno", "phonenumber", "mobile", "mobileno", "contact", "contactno", "whatsapp", "phone_no", "phone_number", "mobile_no", "mobile_number", "contact_number", "tel", "telephone", "cell", "cellphone", "whatsapp_number", "whats_app", "mobilephone"] },
-    joined:   { label: "Joined",     aliases: ["joined", "joiningdate", "joindate", "doj", "dateofjoining", "since", "checkin", "admissiondate", "join_date", "joining_date", "check_in_date", "checkin_date", "start_date", "startdate", "move_in_date", "movedin", "admitted", "from_date", "fromdate", "entry_date", "entrydate", "dt. of joining", "dt of joining", "date of joining", "dt.of.joining", "reco. dt.", "reco dt", "recovery date"] },
+    joined:   { label: "Joined",     aliases: ["joined", "joiningdate", "joindate", "doj", "dateofjoining", "since", "checkin", "admissiondate", "join_date", "joining_date", "check_in_date", "checkin_date", "start_date", "startdate", "move_in_date", "movedin", "admitted", "from_date", "fromdate", "entry_date", "entrydate", "dtofjoining", "dt_of_joining", "dateofjoining", "reco", "recodt", "reco_dt", "recoverydate", "recovery_date"] },
     notice:   { label: "On notice",  aliases: ["onnotice", "notice", "leaving", "vacating", "noticeperiod", "on_notice", "notice_period", "leaving_date", "vacating_date", "notice_flag", "is_leaving", "is_vacating", "departure"] },
     paid:     { label: "Paid",       aliases: ["paid", "rentpaid", "payment", "paymentstatus", "paidstatus", "status", "paid_status", "rent_paid", "payment_status", "settlement", "settled", "cleared", "receipt", "collected", "recovered", "payment_made", "rent_received"] },
-    deposit:  { label: "Deposit",    aliases: ["deposit", "depositbalance", "deposit_balance", "securitydeposit", "security_deposit", "deposit_amount", "dep", "dep_bal", "depositbal", "diposit balance", "diposit_balance", "dipositbalance", "diposit", "rent balance", "rentbalance", "rent_balance", "total collections", "totalcollections", "total_collections"] },
+    deposit:  { label: "Deposit",    aliases: ["deposit", "depositbalance", "deposit_balance", "securitydeposit", "security_deposit", "deposit_amount", "dep", "dep_bal", "depositbal", "dipositbalance", "diposit_balance", "dipositbal", "diposit", "rentbalance", "rent_balance", "totalcollections", "total_collections", "totaldues", "total_dues"] },
     category: { label: "Category",   aliases: ["category", "head", "expensehead", "particulars", "item", "expense", "type", "expense_category", "expense_head", "expense_type", "spending_category", "cost_head", "bill_category", "ledger_head", "group", "classification"] },
     amount:   { label: "Amount",     aliases: ["amount", "cost", "value", "spent", "expenseamount", "total", "expense_amount", "cost_amount", "spending", "expenditure", "bill_amount", "bill_total", "sum", "price_amount", "payable", "charges", "bill", "billing"] },
     date:     { label: "Date",       aliases: ["date", "expensedate", "paidon", "billdate", "expense_date", "bill_date", "paid_date", "payment_date", "transaction_date", "txn_date", "trans_date", "entry_date", "record_date", "when", "on_date"] },
-    note:     { label: "Note",       aliases: ["note", "notes", "remark", "remarks", "description", "details", "comment", "comments", "memo", "narration", "narrative", "info", "information", "extra", "extra_info", "additional", "remarks_text", "description_text", "total dues", "totaldues", "total_dues", "due amount months", "due amount days"] }
+    note:     { label: "Note",       aliases: ["note", "notes", "remark", "remarks", "description", "details", "comment", "comments", "memo", "narration", "narrative", "info", "information", "extra", "extra_info", "additional", "remarks_text", "description_text", "totaldues", "total_dues", "dueamountmonths", "dueamountdays", "rentbalance", "rent_balance"] }
   };
 
   var BED_FIELDS = ["room", "floor", "rent", "bed", "tenant", "phone", "joined", "notice", "paid", "deposit"];
@@ -361,14 +361,34 @@
     for (var f in FIELDS) {
       if (FIELDS[f].aliases.indexOf(k) !== -1) { return f; }
     }
-    /* Detect month payment columns like "April 26 Payment", "May 26 Payment" */
-    if (/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b.*\bpayment\b/i.test(k)) {
+    /* Detect month payment columns like "April 26 Payment" → key is "april26payment" */
+    if (/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\d{0,4}.*payment/i.test(k)) {
       return "paid";
+    }
+    /* Detect transaction reference columns like "April 26 Tranction Refrance" */
+    if (/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\d{0,4}.*tran/i.test(k)) {
+      return "note";
     }
     /* Detect month columns that just have the month name */
-    if (/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*\d{2,4}$/i.test(k)) {
+    if (/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\d{2,4}$/i.test(k)) {
       return "paid";
     }
+    /* Fuzzy: "bed" alone → room (bed number IS the room identifier) */
+    if (k === "bed" || k === "beds") { return "room"; }
+    /* Fuzzy: "room" or "flat" or "unit" → room */
+    if (/^(room|flat|unit|apt|rm)$/.test(k)) { return "room"; }
+    /* Fuzzy: any column with "rent" in it → rent */
+    if (/rent/.test(k) && k.length < 20) { return "rent"; }
+    /* Fuzzy: any column with "name" in it → tenant */
+    if (/name/.test(k) && k.length < 20) { return "tenant"; }
+    /* Fuzzy: any column with "date" or "join" → joined */
+    if (/join|date|since|checkin/.test(k) && k.length < 20) { return "joined"; }
+    /* Fuzzy: "deposit" or "security" → deposit */
+    if (/deposit|security|diposit/.test(k)) { return "deposit"; }
+    /* Fuzzy: "status" → paid */
+    if (k === "status") { return "paid"; }
+    /* Fuzzy: "remark" or "note" or "comment" → note */
+    if (/remark|note|comment|memo/.test(k) && k.length < 20) { return "note"; }
     return null;
   }
 
@@ -385,14 +405,15 @@
 
   /* The header is rarely row 1. Our own backup sheet puts the property name in
      rows 1-2 and the column names in row 4, and people leave title rows above
-     their tables all the time, so the best-scoring of the first ten rows wins. */
+     their tables all the time, so the best-scoring of the first 20 rows wins. */
   function findHeader(rows) {
     var best = { index: -1, map: {}, hits: 0 };
-    var limit = Math.min(rows.length, 10);
+    var limit = Math.min(rows.length, 20);
     for (var i = 0; i < limit; i++) {
       var r = scoreRow(rows[i]);
       if (r.hits > best.hits) { best = { index: i, map: r.map, hits: r.hits }; }
     }
+    console.log("[Import] Header detection: row", best.index, "with", best.hits, "hits, map:", JSON.stringify(best.map));
     return best;
   }
 
@@ -775,7 +796,7 @@
     }
 
     var header = findHeader(rows);
-    if (header.hits < 2) {
+    if (header.hits < 1) {
       fail("Could not find matching columns. Your sheet needs headers like \"Room\", \"Tenant\", \"Rent\" for rooms, " +
         "or \"Date\", \"Category\", \"Amount\" for expenses. Download a template below to see the format.");
       return;
