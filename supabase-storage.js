@@ -307,7 +307,17 @@
     }
 
     await safe("rooms", function () { if (roomRows.length) return upsertAll("rooms", roomRows); });
-    await safe("beds", function () { if (bedRows.length) return upsertAll("beds", bedRows); });
+    await safe("beds", async function () {
+      /* First delete beds that are no longer in state (checked out) */
+      try {
+        var existingBeds2 = await c.from("beds").select("id").eq("owner_id", accountId);
+        var incomingIds2 = {};
+        bedRows.forEach(function (b) { incomingIds2[b.id] = true; });
+        var removeBeds = (existingBeds2.data || []).map(function (b) { return b.id; }).filter(function (id) { return !incomingIds2[id]; });
+        if (removeBeds.length) await c.from("beds").delete().in("id", removeBeds);
+      } catch (e) { /* best-effort */ }
+      if (bedRows.length) return upsertAll("beds", bedRows);
+    });
     await safe("expenses", function () { if (expenseRows.length) return upsertAll("expenses", expenseRows); });
     await safe("rates", function () { if (rateRows.length) return upsertAll("rates", rateRows); });
     await safe("complaints", function () { if (complaintRows.length) return upsertAll("complaints", complaintRows); });
