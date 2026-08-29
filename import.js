@@ -336,22 +336,23 @@
   /* ---------- understanding the columns ---------- */
 
   var FIELDS = {
-    room:     { label: "Room",       aliases: ["room", "roomno", "roomnumber", "roomname", "rm", "rooms", "roomno.", "room_name", "room_number", "room_number", "roomid", "room_id", "flat", "flatno", "flatnumber", "unit", "unitno", "apartment", "apt", "houseno", "house_number", "pg_room"] },
+    room:     { label: "Room",       aliases: ["room", "roomno", "roomnumber", "roomname", "rm", "rooms", "roomno.", "room_name", "room_number", "room_number", "roomid", "room_id", "flat", "flatno", "flatnumber", "unit", "unitno", "apartment", "apt", "houseno", "house_number", "pg_room", "bedno", "bed_no", "bed_no.", "bednumber", "bed_number", "bed no.", "bed no", "bedno."] },
     floor:    { label: "Floor",      aliases: ["floor", "flr", "level", "storey", "story", "floor_no", "floorno", "floor_number"] },
     rent:     { label: "Rent",       aliases: ["rent", "rentperbed", "monthlyrent", "rentamount", "roomrent", "price", "fees", "fee", "rent_per_bed", "monthly_rent", "rent_amount", "room_rent", "rental", "rentprice", "rent_fee", "amount_per_bed", "per_bed", "bed_rent", "bedrent", "monthly", "monthly_fee"] },
-    bed:      { label: "Bed",        aliases: ["bed", "bedno", "bedletter", "bedname", "bednumber", "bed_no", "bed_number", "bed_name", "bedid", "bed_id", "cot", "berth", "bunk"] },
+    bed:      { label: "Bed",        aliases: ["bed", "bedletter", "bedname", "bed_name", "bedid", "bed_id", "cot", "berth", "bunk"] },
     tenant:   { label: "Tenant",     aliases: ["tenant", "tenantname", "name", "fullname", "student", "occupant", "person", "boarder", "guest", "tenant_name", "tenantname", "occupant_name", "guest_name", "resident", "member", "lodger", "payer", "customer", "client", "user", "tenant_id"] },
     phone:    { label: "Phone",      aliases: ["phone", "phoneno", "phonenumber", "mobile", "mobileno", "contact", "contactno", "whatsapp", "phone_no", "phone_number", "mobile_no", "mobile_number", "contact_number", "tel", "telephone", "cell", "cellphone", "whatsapp_number", "whats_app", "mobilephone"] },
     joined:   { label: "Joined",     aliases: ["joined", "joiningdate", "joindate", "doj", "dateofjoining", "since", "checkin", "admissiondate", "join_date", "joining_date", "check_in_date", "checkin_date", "start_date", "startdate", "move_in_date", "movedin", "admitted", "from_date", "fromdate", "entry_date", "entrydate"] },
     notice:   { label: "On notice",  aliases: ["onnotice", "notice", "leaving", "vacating", "noticeperiod", "on_notice", "notice_period", "leaving_date", "vacating_date", "notice_flag", "is_leaving", "is_vacating", "departure"] },
     paid:     { label: "Paid",       aliases: ["paid", "rentpaid", "payment", "paymentstatus", "paidstatus", "status", "paid_status", "rent_paid", "payment_status", "settlement", "settled", "cleared", "receipt", "collected", "recovered", "payment_made", "rent_received"] },
+    deposit:  { label: "Deposit",    aliases: ["deposit", "depositbalance", "deposit_balance", "securitydeposit", "security_deposit", "deposit_amount", "dep", "dep_bal", "depositbal"] },
     category: { label: "Category",   aliases: ["category", "head", "expensehead", "particulars", "item", "expense", "type", "expense_category", "expense_head", "expense_type", "spending_category", "cost_head", "bill_category", "ledger_head", "group", "classification"] },
     amount:   { label: "Amount",     aliases: ["amount", "cost", "value", "spent", "expenseamount", "total", "expense_amount", "cost_amount", "spending", "expenditure", "bill_amount", "bill_total", "sum", "price_amount", "payable", "charges", "bill", "billing"] },
     date:     { label: "Date",       aliases: ["date", "expensedate", "paidon", "billdate", "expense_date", "bill_date", "paid_date", "payment_date", "transaction_date", "txn_date", "trans_date", "entry_date", "record_date", "when", "on_date"] },
     note:     { label: "Note",       aliases: ["note", "notes", "remark", "remarks", "description", "details", "comment", "comments", "memo", "narration", "narrative", "info", "information", "extra", "extra_info", "additional", "remarks_text", "description_text"] }
   };
 
-  var BED_FIELDS = ["room", "floor", "rent", "bed", "tenant", "phone", "joined", "notice", "paid"];
+  var BED_FIELDS = ["room", "floor", "rent", "bed", "tenant", "phone", "joined", "notice", "paid", "deposit"];
   var EXPENSE_FIELDS = ["date", "category", "amount", "note"];
 
   function matchField(cell) {
@@ -427,6 +428,19 @@
         return;
       }
 
+      /* --- Parse compound bed numbers like 0101, 0201, 1201 ---
+         Pattern: first 2 digits = room, last 2 digits = bed position.
+         e.g. 0101 → Room 01 Bed A, 0201 → Room 02 Bed A, etc.
+         Only applies when: no separate 'bed' column, value is 4 digits, last 2 <= 8. */
+      var compoundBedIdx = -1;
+      if (map.bed === undefined && /^\d{4}$/.test(roomNo)) {
+        var lastTwo = parseInt(roomNo.slice(2), 10);
+        if (lastTwo >= 1 && lastTwo <= 8) {
+          compoundBedIdx = lastTwo - 1;
+          roomNo = roomNo.slice(0, 2);
+        }
+      }
+
       var rk = roomNo.toLowerCase();
       var room = byNo[rk];
       if (!room) {
@@ -448,7 +462,7 @@
         }
       }
 
-      var idx = map.bed !== undefined ? bedIndex(get("bed")) : -1;
+      var idx = compoundBedIdx >= 0 ? compoundBedIdx : (map.bed !== undefined ? bedIndex(get("bed")) : -1);
       if (idx < 0) { idx = room.seen; }
       room.seen++;
 
@@ -483,6 +497,7 @@
         phone: norm(get("phone")).slice(0, 24),
         joined: joined,
         rent: bedCustomRent,
+        deposit: map.deposit !== undefined ? Math.round(num(get("deposit"))) : 0,
         onNotice: map.notice !== undefined ? truthy(get("notice")) : false,
         paid: map.paid !== undefined ? truthy(get("paid")) : false
       };
