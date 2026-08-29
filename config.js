@@ -26,8 +26,16 @@
    can see it.
 */
 window.PG_CONFIG = {
-  SUPABASE_URL: "https://lkuuwoocxchjisodegur.supabase.co",
-  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxrdXV3b29jeGNoamlzb2RlZ3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MzU5MjMsImV4cCI6MjEwMTUxMTkyM30.dGLxbkGIOfJ6Mo3BPKIEZZ6mjVZe3m1H56oaQam95KA",
-  SHEETS_URL: "https://script.google.com/macros/s/AKfycbwlnwmGvn-k-i-SUZDz1emnsLfqHNUdWXLBFlDL-x2Aw7pRaFjGNVuJ53E-tZjllLsYGw/exec",
-  SHEETS_TOKEN: "pg-swayam-9f3k2mx7qz"
+  /* Supabase — PRIMARY database for all data.
+     1. Go to https://supabase.com/dashboard → New Project
+     2. Go to Settings → API → Copy Project URL and anon key
+     3. Go to SQL Editor → paste supabase/schema.sql → Run
+     4. Paste your values below */
+  SUPABASE_URL: "",
+  SUPABASE_ANON_KEY: "",
+
+  /* Google Sheets — optional BACKUP only.
+     Leave empty to disable. */
+  SHEETS_URL: "",
+  SHEETS_TOKEN: ""
 };

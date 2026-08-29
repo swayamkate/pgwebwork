@@ -2070,24 +2070,15 @@ function boot(session) {
     SupabaseStorage.init(accountId);
     if (SupabaseStorage.isAvailable()) {
       SupabaseStorage.load().then(function (data) {
-        if (data && data.rooms && data.rooms.length) {
-          if (PGStore.isEmpty()) {
-            PGStore.replaceAll({
-              property: PGStore.state().property || "",
-              rooms: data.rooms,
-              expenses: data.expenses || [],
-              activity: PGStore.state().activity || [],
-              rates: PGStore.state().rates || [],
-              complaints: PGStore.state().complaints || [],
-              rules: PGStore.state().rules || {},
-              owner: PGStore.state().owner || { name: "", phone: "", address: "", upiId: "", pgStartDate: "" },
-              settings: PGStore.state().settings || { floors: true, bedStyle: "alpha", bedNumbering: "restart" },
-              cycle: PGStore.state().cycle || ""
-            });
-            renderAll();
-          }
+        if (data && data.rooms) {
+          /* Supabase has data — use it as the source of truth.
+             Always replace local state with Supabase data when available. */
+          PGStore.replaceAll(data);
+          renderAll();
         }
-      }).catch(function () {});
+      }).catch(function (e) {
+        console.warn("Supabase load failed, using localStorage:", e);
+      });
     }
   }
 }

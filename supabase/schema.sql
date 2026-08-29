@@ -1,102 +1,167 @@
--- PG Manager — Supabase schema
---
--- Run this once in your project: Supabase → SQL Editor → New query → paste →
--- Run. It is safe to run more than once; every statement checks first.
---
--- What it is for: a username has to be unique across every account. Supabase
--- keeps user metadata as free-form JSON on each user, and nothing there can
--- promise two people did not pick "swayam". So usernames live in their own
--- table, and the database itself refuses the second one.
+-- ============================================================
+-- PG Manager — Complete Supabase Schema
+-- Run this in: Supabase Dashboard → SQL Editor → New Query
+-- ============================================================
 
-
--- ---------------------------------------------------------------------------
--- 1. The table
--- ---------------------------------------------------------------------------
-
-create table if not exists public.profiles (
-  id         uuid primary key references auth.users (id) on delete cascade,
-  username   text,
-  created_at timestamptz not null default now()
+-- 1. PROFILES (extends Supabase auth.users)
+-- Stores owner/staff display name and role
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL DEFAULT '',
+  username TEXT UNIQUE,
+  role TEXT NOT NULL DEFAULT 'owner' CHECK (role IN ('owner', 'staff')),
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- 2. PROPERTIES (one owner can have one PG property)
+CREATE TABLE IF NOT EXISTS properties (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL DEFAULT '',
+  address TEXT DEFAULT '',
+  pg_start_date DATE,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(owner_id)
+);
 
--- ---------------------------------------------------------------------------
--- 2. The rule that does the real work
--- ---------------------------------------------------------------------------
+-- 3. ROOMS
+CREATE TABLE IF NOT EXISTS rooms (
+  id TEXT PRIMARY KEY,
+  owner_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  no TEXT NOT NULL DEFAULT '',
+  floor INTEGER NOT NULL DEFAULT 0,
+  rent INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 
--- Unique, and case-blind: "Swayam" and "swayam" are the same person's claim.
--- Rows with no username yet are simply not covered by the index.
-create unique index if not exists profiles_username_key
-  on public.profiles (lower(username))
-  where username is not null;
+-- 4. BEDS (each bed belongs to a room, may have a tenant)
+CREATE TABLE IF NOT EXISTS beds (
+  id TEXT PRIMARY KEY,
+  room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+  owner_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  bed_index INTEGER NOT NULL DEFAULT 0,
+  name TEXT DEFAULT '',
+  phone TEXT DEFAULT '',
+  joined DATE,
+  leaving DATE,
+  note TEXT DEFAULT '',
+  collect INTEGER DEFAULT 0,
+  rent INTEGER,
+  deposit INTEGER DEFAULT 0,
+  id_type TEXT DEFAULT '',
+  id_number TEXT DEFAULT '',
+  emergency_contact TEXT DEFAULT '',
+  workplace TEXT DEFAULT '',
+  on_notice BOOLEAN DEFAULT false,
+  paid_months TEXT[] DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 
--- The same shape rule the browser enforces, enforced again down here, because
--- a check that only runs in the page is a suggestion.
-alter table public.profiles
-  drop constraint if exists profiles_username_shape;
+-- 5. EXPENSES
+CREATE TABLE IF NOT EXISTS expenses (
+  id TEXT PRIMARY KEY,
+  owner_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  category TEXT NOT NULL DEFAULT 'Other',
+  amount INTEGER NOT NULL DEFAULT 0,
+  note TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 
-alter table public.profiles
-  add constraint profiles_username_shape
-  check (username is null or username ~ '^[a-z0-9._-]{3,20}$');
+-- 6. RATES (rate card)
+CREATE TABLE IF NOT EXISTS rates (
+  id TEXT PRIMARY KEY,
+  owner_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  label TEXT NOT NULL DEFAULT '',
+  amount INTEGER NOT NULL DEFAULT 0,
+  note TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 
+-- 7. COMPLAINTS (issues / maintenance)
+CREATE TABLE IF NOT EXISTS complaints (
+  id TEXT PRIMARY KEY,
+  owner_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL DEFAULT '',
+  room_id TEXT DEFAULT '',
+  room_no TEXT DEFAULT '',
+  category TEXT DEFAULT 'General',
+  priority TEXT DEFAULT 'medium' CHECK (priority IN ('high', 'medium', 'low')),
+  status TEXT DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'resolved')),
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  note TEXT DEFAULT '',
+  cost INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 
--- ---------------------------------------------------------------------------
--- 3. A row for every account, created automatically
--- ---------------------------------------------------------------------------
+-- 8. ACTIVITY (feed of recent actions)
+CREATE TABLE IF NOT EXISTS activity (
+  id TEXT PRIMARY KEY,
+  owner_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  text TEXT NOT NULL DEFAULT '',
+  type TEXT DEFAULT 'info',
+  ts TIMESTAMPTZ DEFAULT now()
+);
 
-create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  insert into public.profiles (id)
-  values (new.id)
-  on conflict (id) do nothing;
-  return new;
-end;
-$$;
+-- 9. SETTINGS (app preferences)
+CREATE TABLE IF NOT EXISTS settings (
+  owner_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  floors BOOLEAN DEFAULT true,
+  bed_style TEXT DEFAULT 'alpha',
+  bed_numbering TEXT DEFAULT 'restart'
+);
 
-drop trigger if exists on_auth_user_created on auth.users;
+-- 10. RULES (PG house rules)
+CREATE TABLE IF NOT EXISTS rules (
+  owner_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  visiting TEXT DEFAULT '',
+  quiet TEXT DEFAULT '',
+  guests TEXT DEFAULT '',
+  lockout TEXT DEFAULT '',
+  other TEXT DEFAULT ''
+);
 
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute function public.handle_new_user();
+-- ============================================================
+-- ROW LEVEL SECURITY (RLS)
+-- Each owner can only see/modify their own data
+-- ============================================================
 
--- Anyone who already signed up before this file was run still needs a row.
-insert into public.profiles (id)
-select id from auth.users
-on conflict (id) do nothing;
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE properties ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rooms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE beds ENABLE ROW LEVEL SECURITY;
+ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE complaints ENABLE ROW LEVEL SECURITY;
+ALTER TABLE activity ENABLE ROW LEVEL SECURITY;
+ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rules ENABLE ROW LEVEL SECURITY;
 
+-- Profiles: users can read all profiles (for username lookup), write only their own
+CREATE POLICY "profiles_select" ON profiles FOR SELECT USING (true);
+CREATE POLICY "profiles_insert" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "profiles_update" ON profiles FOR UPDATE USING (auth.uid() = id);
 
--- ---------------------------------------------------------------------------
--- 4. Row Level Security
--- ---------------------------------------------------------------------------
+-- All other tables: owner can only access their own rows
+CREATE POLICY "properties_own" ON properties FOR ALL USING (owner_id = auth.uid());
+CREATE POLICY "rooms_own" ON rooms FOR ALL USING (owner_id = auth.uid());
+CREATE POLICY "beds_own" ON beds FOR ALL USING (owner_id = auth.uid());
+CREATE POLICY "expenses_own" ON expenses FOR ALL USING (owner_id = auth.uid());
+CREATE POLICY "rates_own" ON rates FOR ALL USING (owner_id = auth.uid());
+CREATE POLICY "complaints_own" ON complaints FOR ALL USING (owner_id = auth.uid());
+CREATE POLICY "activity_own" ON activity FOR ALL USING (owner_id = auth.uid());
+CREATE POLICY "settings_own" ON settings FOR ALL USING (owner_id = auth.uid());
+CREATE POLICY "rules_own" ON rules FOR ALL USING (owner_id = auth.uid());
 
--- Without this, the anon key in config.js could read the whole table.
-alter table public.profiles enable row level security;
+-- ============================================================
+-- INDEXES for fast queries
+-- ============================================================
 
--- Read your own row.
-drop policy if exists "read own profile" on public.profiles;
-create policy "read own profile"
-  on public.profiles for select
-  using (auth.uid() = id);
-
--- Change your own row, and only your own.
-drop policy if exists "update own profile" on public.profiles;
-create policy "update own profile"
-  on public.profiles for update
-  using (auth.uid() = id)
-  with check (auth.uid() = id);
-
--- Insert is here only so a first save still works if the trigger above never
--- fired for an older account. The id is pinned to the caller either way.
-drop policy if exists "insert own profile" on public.profiles;
-create policy "insert own profile"
-  on public.profiles for insert
-  with check (auth.uid() = id);
-
--- Note there is deliberately no delete policy and no policy that lets one
--- account read another. A visitor cannot list who exists, so usernames stay
--- unique without also becoming a directory of your staff.
+CREATE INDEX IF NOT EXISTS idx_rooms_owner ON rooms(owner_id);
+CREATE INDEX IF NOT EXISTS idx_beds_owner ON beds(owner_id);
+CREATE INDEX IF NOT EXISTS idx_beds_room ON beds(room_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_owner ON expenses(owner_id);
+CREATE INDEX IF NOT EXISTS idx_rates_owner ON rates(owner_id);
+CREATE INDEX IF NOT EXISTS idx_complaints_owner ON complaints(owner_id);
+CREATE INDEX IF NOT EXISTS idx_activity_owner ON activity(owner_id);
+CREATE INDEX IF NOT EXISTS idx_activity_ts ON activity(ts DESC);
