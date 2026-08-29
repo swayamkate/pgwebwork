@@ -1309,6 +1309,7 @@ function renderAll() {
   if (deferredFns.length) {
     requestAnimationFrame(function () { runFns(deferredFns); });
   }
+}
 
 /* ---------- backup ---------- */
 
