@@ -20,6 +20,58 @@ const esc = (s) =>
   String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+/* ---------- toast notifications ---------- */
+function toast(msg, type, duration) {
+  type = type || 'success';
+  duration = duration || 3000;
+  var container = el('toast-container');
+  if (!container) return;
+  var icons = { success: '✓', error: '✕', info: 'ℹ', warn: '⚠' };
+  var t = document.createElement('div');
+  t.className = 'toast toast-' + type;
+  t.innerHTML = '<span class="toast-icon">' + (icons[type] || '') + '</span>' +
+    '<span class="toast-body">' + esc(msg) + '</span>' +
+    '<button class="toast-close" type="button" aria-label="Dismiss">✕</button>';
+  t.querySelector('.toast-close').onclick = function () { removeToast(t); };
+  container.appendChild(t);
+  setTimeout(function () { removeToast(t); }, duration);
+}
+function removeToast(t) {
+  if (!t || !t.parentNode) return;
+  t.classList.add('removing');
+  setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 250);
+}
+
+/* ---------- custom confirm dialog ---------- */
+var _confirmResolve = null;
+function confirmAsync(opts) {
+  return new Promise(function (resolve) {
+    _confirmResolve = resolve;
+    var dlg = el('dlg-confirm');
+    var icon = el('confirm-icon');
+    var title = el('confirm-title');
+    var msg = el('confirm-msg');
+    var okBtn = el('confirm-ok');
+    var cancelBtn = el('confirm-cancel');
+    var type = opts.type || 'warn';
+    icon.textContent = opts.icon || (type === 'danger' ? '⚠' : type === 'success' ? '✓' : '?');
+    icon.className = 'confirm-' + type;
+    title.textContent = opts.title || 'Are you sure?';
+    msg.textContent = opts.message || '';
+    okBtn.textContent = opts.okText || 'Confirm';
+    okBtn.className = type === 'danger' ? 'btn-primary btn-sm btn-danger' : 'btn-primary btn-sm';
+    okBtn.style.width = 'auto';
+    okBtn.style.minWidth = '120px';
+    function close(result) {
+      if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
+      if (_confirmResolve) { _confirmResolve(result); _confirmResolve = null; }
+    }
+    okBtn.onclick = function () { close(true); };
+    cancelBtn.onclick = function () { close(false); };
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+  });
+}
+
 function prettyDate(value) {
   if (!value) { return "\u2014"; }
   const d = new Date(value);
@@ -1056,9 +1108,10 @@ function downloadJsonBackup() {
   a.download = "pg-backup-" + new Date().toISOString().slice(0, 10) + ".json";
   a.click();
   URL.revokeObjectURL(url);
+  toast("Backup downloaded!", "success");
 }
 
-function importJsonBackup() {
+async function importJsonBackup() {
   const input = document.createElement("input");
   input.type = "file";
   input.accept = ".json";
@@ -1066,16 +1119,17 @@ function importJsonBackup() {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = function (ev) {
+    reader.onload = async function (ev) {
       try {
         const data = JSON.parse(ev.target.result);
-        if (!data || !data.rooms) { alert("This does not look like a valid PG Manager backup."); return; }
-        if (!confirm("This will replace ALL current data with the backup. Continue?")) return;
+        if (!data || !data.rooms) { toast("This does not look like a valid PG Manager backup.", "error"); return; }
+        var ok = await confirmAsync({ type: 'danger', title: 'Restore backup?', message: 'This will replace ALL current data with the backup. Continue?', okText: 'Restore', icon: '⚠' });
+        if (!ok) return;
         PGStore.replaceAll(data);
         commit();
-        alert("Backup restored successfully!");
+        toast("Backup restored successfully!", "success");
       } catch (err) {
-        alert("Could not read the backup file: " + err.message);
+        toast("Could not read the backup file: " + err.message, "error");
       }
     };
     reader.readAsText(file);
@@ -1087,48 +1141,56 @@ function exportAllCsv() {
   exportTenantsCsv();
   setTimeout(exportLedgerCsv, 500);
   setTimeout(exportExpensesCsv, 1000);
+  toast("Exporting all data as CSV…", "info");
 }
 
-function broadcastWhatsAppReminders() {
+async function broadcastWhatsAppReminders() {
   const list = tenants();
   const unpaid = list.filter((t) => !t.paid && t.phone);
-  if (!unpaid.length) { alert("No unpaid tenants with phone numbers."); return; }
+  if (!unpaid.length) { toast("No unpaid tenants with phone numbers.", "info"); return; }
   const count = unpaid.length;
-  if (!confirm("Send WhatsApp rent reminders to " + count + " unpaid tenant" + (count !== 1 ? "s" : "") + ". Continue?")) return;
+  var ok = await confirmAsync({ type: 'info', title: 'Send reminders?', message: 'Send WhatsApp rent reminders to ' + count + ' unpaid tenant' + (count !== 1 ? 's' : '') + '. Continue?', okText: 'Send', icon: '💬' });
+  if (!ok) return;
   unpaid.forEach((t, i) => {
     setTimeout(function () { sendWhatsAppReminder(t.roomId, t.bedIndex); }, i * 1000);
   });
+  toast('Sending reminders to ' + count + ' tenant' + (count !== 1 ? 's' : '') + '…', 'info');
 }
 
-function sendReceiptsToAllPaid() {
+async function sendReceiptsToAllPaid() {
   const list = tenants();
   const paid = list.filter((t) => t.paid && t.phone);
-  if (!paid.length) { alert("No paid tenants with phone numbers."); return; }
+  if (!paid.length) { toast("No paid tenants with phone numbers.", "info"); return; }
   const count = paid.length;
-  if (!confirm("Send WhatsApp receipts to " + count + " paid tenant" + (count !== 1 ? "s" : "") + ". Continue?")) return;
+  var ok = await confirmAsync({ type: 'info', title: 'Send receipts?', message: 'Send WhatsApp receipts to ' + count + ' paid tenant' + (count !== 1 ? 's' : '') + '. Continue?', okText: 'Send', icon: '📄' });
+  if (!ok) return;
   paid.forEach((t, i) => {
     setTimeout(function () { sendWhatsAppReminder(t.roomId, t.bedIndex); }, i * 1000);
   });
+  toast('Sending receipts to ' + count + ' tenant' + (count !== 1 ? 's' : '') + '…', 'info');
 }
 
-function bulkMarkAllPaid() {
+async function bulkMarkAllPaid() {
   const list = tenants();
   const unpaid = list.filter((t) => !t.paid);
-  if (!unpaid.length) { alert("All tenants are already marked as paid!"); return; }
-  if (!confirm("Mark " + unpaid.length + " tenant" + (unpaid.length !== 1 ? "s" : "") + " as paid for this month?")) return;
+  if (!unpaid.length) { toast("All tenants are already marked as paid!", "info"); return; }
+  var ok = await confirmAsync({ type: 'success', title: 'Mark all paid?', message: 'Mark ' + unpaid.length + ' tenant' + (unpaid.length !== 1 ? 's' : '') + ' as paid for this month?', okText: 'Mark paid', icon: '✓' });
+  if (!ok) return;
   unpaid.forEach((t) => {
     PGStore.setPaid(t.roomId, t.bedIndex, true);
   });
   commit();
-  alert("Marked " + unpaid.length + " tenant" + (unpaid.length !== 1 ? "s" : "") + " as paid.");
+  toast("Marked " + unpaid.length + " tenant" + (unpaid.length !== 1 ? "s" : "") + " as paid.", "success");
 }
 
-function resetAllData() {
-  if (!confirm("⚠️ This will DELETE ALL your rooms, tenants, expenses, and settings. This cannot be undone!")) return;
-  if (!confirm("Are you absolutely sure? Type your decision in your head and click OK if you want to proceed.")) return;
+async function resetAllData() {
+  var ok1 = await confirmAsync({ type: 'danger', title: 'Delete all data?', message: 'This will DELETE ALL your rooms, tenants, expenses, and settings. This cannot be undone!', okText: 'Delete everything', icon: '⚠' });
+  if (!ok1) return;
+  var ok2 = await confirmAsync({ type: 'danger', title: 'Are you absolutely sure?', message: 'Last chance — all your data will be permanently deleted.', okText: 'Yes, delete it all', icon: '🗑' });
+  if (!ok2) return;
   PGStore.replaceAll({ property: "", rooms: [], activity: [], expenses: [], rates: [], complaints: [], rules: {}, owner: { name: "", phone: "", address: "", upiId: "", pgStartDate: "" }, settings: { floors: true, bedStyle: "alpha", bedNumbering: "restart" }, cycle: "" });
   commit();
-  alert("All data has been cleared.");
+  toast("All data has been cleared.", "success");
 }
 
 /* ---------- owner tab render ---------- */
@@ -1332,9 +1394,9 @@ function fillBedPicker(roomId, bedIndex) {
 
 function openTenantDialog(roomId, bedIndex) {
   if (!PGStore.vacantBeds().length) {
-    alert(PGStore.isEmpty()
+    toast(PGStore.isEmpty()
       ? "Add a room first, then you can move tenants in."
-      : "Every bed is taken. Add another room to make space.");
+      : "Every bed is taken. Add another room to make space.", "warn");
     return;
   }
   fillBedPicker(roomId, bedIndex);
@@ -1450,6 +1512,7 @@ el("form-offboard").addEventListener("submit", (e) => {
 
   closeDlg("dlg-offboard");
   offboardingRef = null;
+  toast("Tenant checked out & settled!", "success");
   commit();
 });
 
@@ -1504,7 +1567,7 @@ function sendWhatsAppReminder(roomId, bedIndex) {
   if (!room) { return; }
   const bed = room.beds[bedIndex];
   if (!bed || !bed.phone) {
-    alert("No phone number saved for this tenant. Add one in their profile first.");
+    toast("No phone number saved for this tenant. Add one in their profile first.", "warn");
     return;
   }
   const owner = PGStore.state().owner || {};
@@ -1526,6 +1589,7 @@ el("form-transfer").addEventListener("submit", (e) => {
   const res = PGStore.transferTenant(fromRoom, fromBed, dest[0], Number(dest[1]));
   if (!res.ok) { showErr("tr-err", res.error); return; }
   closeDlg("dlg-transfer");
+  toast("Tenant transferred!", "success");
   commit();
 });
 
@@ -1548,6 +1612,7 @@ el("form-complaint").addEventListener("submit", (e) => {
   });
   if (!res.ok) { showErr("co-err", res.error); return; }
   closeDlg("dlg-complaint");
+  toast("Issue logged!", "success");
   commit();
 });
 
@@ -1563,6 +1628,7 @@ el("form-resolve-complaint").addEventListener("submit", (e) => {
   });
   if (!res.ok) { showErr("rco-err", res.error); return; }
   closeDlg("dlg-resolve-complaint");
+  toast("Issue updated!", "success");
   commit();
 });
 
@@ -1581,6 +1647,7 @@ function exportTenantsCsv() {
   const rows = [["Name", "Phone", "Room", "Bed", "Rent", "Deposit", "Joined", "Leaving", "Status", "ID Type", "ID No.", "Emergency", "Workplace", "Note"]];
   list.forEach((t) => rows.push([t.name, t.phone, t.roomNo, t.bed, t.rent, t.deposit, t.joined, t.leaving || "", t.status, t.idType, t.idNumber, t.emergencyContact, t.workplace, t.note]));
   csvDownload("tenants-" + new Date().toISOString().slice(0, 10) + ".csv", rows);
+  toast("Tenants exported!", "success");
 }
 
 function exportLedgerCsv() {
@@ -1599,12 +1666,14 @@ function exportLedgerCsv() {
     });
   });
   csvDownload("ledger-" + new Date().toISOString().slice(0, 10) + ".csv", rows);
+  toast("Ledger exported!", "success");
 }
 
 function exportExpensesCsv() {
   const rows = [["Date", "Category", "Amount", "Note"]];
   PGStore.state().expenses.forEach((x) => rows.push([x.date, x.category, x.amount, x.note || ""]));
   csvDownload("expenses-" + new Date().toISOString().slice(0, 10) + ".csv", rows);
+  toast("Expenses exported!", "success");
 }
 
 /* ---------- actions ---------- */
@@ -1654,35 +1723,38 @@ document.addEventListener("click", (e) => {
     el("p-name").value = PGStore.state().property;
     openDlg("dlg-property");
   } else if (act === "del-room") {
-    if (confirm("Remove this room? Any tenants in it are removed too.")) {
-      PGStore.removeRoom(roomId);
-      commit();
-    }
+    confirmAsync({ type: 'danger', title: 'Remove room?', message: 'Remove this room? Any tenants in it are removed too.', okText: 'Remove', icon: '🗑' }).then(function (ok) {
+      if (ok) { PGStore.removeRoom(roomId); commit(); }
+    });
   } else if (act === "notice") {
     PGStore.toggleNotice(roomId, Number(bedIndex));
     commit();
+    toast('Notice period toggled', 'info');
   } else if (act === "checkout") {
     openOffboardDialog(roomId, Number(bedIndex));
   } else if (act === "pay") {
-    PGStore.setPaid(roomId, Number(bedIndex), btn.dataset.paid === "1");
+    var isPaid = btn.dataset.paid === "1";
+    PGStore.setPaid(roomId, Number(bedIndex), isPaid);
     commit();
+    toast(isPaid ? 'Marked as paid ✓' : 'Payment undone', 'success');
   } else if (act === "add-expense") {
     el("form-expense").reset();
     openExpenseDialog();
   } else if (act === "del-expense") {
-    if (confirm("Remove this expense?")) {
-      PGStore.removeExpense(btn.dataset.exp);
-      commit();
-    }
+    confirmAsync({ type: 'danger', title: 'Remove expense?', message: 'Remove this expense?', okText: 'Remove', icon: '🗑' }).then(function (ok) {
+      if (ok) { PGStore.removeExpense(btn.dataset.exp); commit(); }
+    });
   } else if (act === "backup-restore") {
-    if (confirm("Replace everything on this account with the last backup from the sheet?")) {
+    confirmAsync({ type: 'info', title: 'Restore from sheet?', message: 'Replace everything on this account with the last backup from the sheet?', okText: 'Restore', icon: '📥' }).then(function (ok) {
+      if (!ok) return;
       PGSheets.restore().then((data) => {
         PGStore.replaceAll(data);
         renderAll();
+        toast('Restored from Google Sheets', 'success');
       }, (err) => {
-        alert(err && err.message ? err.message : "Could not restore from the sheet.");
+        toast(err && err.message ? err.message : "Could not restore from the sheet.", "error");
       });
-    }
+    });
   } else if (act === "rate-card") {
     openRateCard();
   } else if (act === "add-rate") {
@@ -1708,7 +1780,7 @@ document.addEventListener("click", (e) => {
     if (!src) { return; }
     el("tr-who").textContent = src.name + " — currently Room " + src.roomNo + " Bed " + src.bed;
     const vacant = PGStore.vacantBeds();
-    if (!vacant.length) { alert("No vacant beds to transfer to."); return; }
+    if (!vacant.length) { toast("No vacant beds to transfer to.", "info"); return; }
     el("tr-dest").innerHTML = vacant.map((b) =>
       `<option value="${esc(b.roomId)}|${b.bedIndex}">Room ${esc(b.roomNo)} · Bed ${b.bed} — ${money(b.rent)}</option>`
     ).join("");
@@ -1744,10 +1816,9 @@ document.addEventListener("click", (e) => {
     el("form-resolve-complaint").dataset.compId = comp.id;
     openDlg("dlg-resolve-complaint");
   } else if (act === "del-complaint") {
-    if (confirm("Remove this issue?")) {
-      PGStore.removeComplaint(btn.dataset.comp);
-      commit();
-    }
+    confirmAsync({ type: 'danger', title: 'Remove issue?', message: 'Remove this issue?', okText: 'Remove', icon: '🗑' }).then(function (ok) {
+      if (ok) { PGStore.removeComplaint(btn.dataset.comp); commit(); }
+    });
   } else if (act === "export-tenants") {
     exportTenantsCsv();
   } else if (act === "export-ledger") {
@@ -1791,6 +1862,7 @@ el("form-room").addEventListener("submit", (e) => {
   });
   if (!res.ok) { showErr("r-err", res.error); return; }
   closeDlg("dlg-room");
+  toast("Room added!", "success");
   commit();
 });
 
@@ -1808,6 +1880,7 @@ el("form-tenant").addEventListener("submit", (e) => {
   });
   if (!res.ok) { showErr("t-err", res.error); return; }
   closeDlg("dlg-tenant");
+  toast("Tenant added!", "success");
   commit();
 });
 
@@ -1821,6 +1894,7 @@ el("form-expense").addEventListener("submit", (e) => {
   });
   if (!res.ok) { showErr("x-err", res.error); return; }
   closeDlg("dlg-expense");
+  toast("Expense logged!", "success");
   commit();
 });
 
@@ -1833,6 +1907,7 @@ el("form-rate").addEventListener("submit", (e) => {
   });
   if (!res.ok) { showErr("ra-err", res.error); return; }
   closeDlg("dlg-rate");
+  toast("Rate added!", "success");
   commit();
 });
 
@@ -1847,6 +1922,7 @@ el("form-owner").addEventListener("submit", (e) => {
   });
   if (!res.ok) { showErr("o-err", res.error); return; }
   closeDlg("dlg-owner");
+  toast("Details saved!", "success");
   commit();
 });
 
@@ -1860,6 +1936,7 @@ el("form-rules").addEventListener("submit", (e) => {
     other: el("ru-other").value
   });
   closeDlg("dlg-rules");
+  toast("Rules saved!", "success");
   commit();
 });
 
@@ -1867,6 +1944,7 @@ el("form-property").addEventListener("submit", (e) => {
   e.preventDefault();
   PGStore.setProperty(el("p-name").value);
   closeDlg("dlg-property");
+  toast("Property name saved!", "success");
   commit();
 });
 
@@ -1904,6 +1982,7 @@ el("form-backfill").addEventListener("submit", (e) => {
   if (!res.ok) { showErr("bf-err", res.error); return; }
   closeDlg("dlg-backfill");
   backfillRef = null;
+  toast("Payment history saved!", "success");
   commit();
 });
 
