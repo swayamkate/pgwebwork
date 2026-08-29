@@ -87,7 +87,7 @@
       </span>
 
       <h1 id="head">Create your login</h1>
-      <p class="auth-sub" id="sub">You need an invite code from the property owner</p>
+      <p class="auth-sub" id="sub">Create your account to start managing your PG</p>
 
       <p class="auth-ok" id="confirm-note" role="status" hidden></p>
 
@@ -103,10 +103,10 @@
           <p class="hint">You can add a shorter username later.</p>
         </div>
 
-        <div class="field" id="invite-field">
-          <label for="invite">Invite code</label>
-          <input id="invite" name="invite" type="text" class="code-input" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19" required />
-          <p class="hint">One code opens one account, and only once.</p>
+        <div class="field" id="invite-field" hidden>
+          <label for="invite">Invite code <span style="color:var(--muted)">(optional)</span></label>
+          <input id="invite" name="invite" type="text" class="code-input" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19" />
+          <p class="hint">Leave empty if you were not given a code.</p>
         </div>
 
         <div class="field">
@@ -137,8 +137,8 @@
       <p class="auth-alt">Already have a login? <a href="login.html">Sign in</a></p>
 
       <div class="auth-hint" id="hint-box">
-        <b>🔐 Invite only</b>
-        <span>Nobody can open an account here without a code issued by the owner.</span>
+        <b>🌐 Public registration</b>
+        <span>Anyone can create an account. Each person gets their own workspace.</span>
       </div>
     </div>
 
@@ -174,17 +174,18 @@
   }
 
   PGAuth.needsBootstrap().then(function (first) {
-    if (!first) { return; }
-    isFirst = true;
-    document.getElementById("head").textContent = "Set up the owner account";
-    document.getElementById("sub").textContent =
-      "This is the first login for this property. You will be the owner.";
-    inviteEl.required = false;
-    inviteEl.value = "";
-    inviteField.hidden = true;
-    document.getElementById("hint-box").innerHTML =
-      "<b>One time only<\/b><span>Once this account exists, every further login needs an invite code that you issue.<\/span>";
-    submit.textContent = "Create owner account";
+    if (first) {
+      isFirst = true;
+      document.getElementById("head").textContent = "Set up the owner account";
+      document.getElementById("sub").textContent =
+        "This is the first login for this property. You will be the owner.";
+      inviteEl.required = false;
+      inviteEl.value = "";
+      inviteField.hidden = true;
+      document.getElementById("hint-box").innerHTML =
+        "<b>One time only<\/b><span>Once this account exists, every further signup creates a staff account.<\/span>";
+      submit.textContent = "Create owner account";
+    }
   }, function () {});
 
   inviteEl.addEventListener("input", function () {
@@ -228,12 +229,12 @@
 
     if (!name) { return fail("Enter your name.", nameEl); }
     if (!PGAuth.isEmail(email)) { return fail("Enter a valid email address.", emailEl); }
-    if (!isFirst && !invite) { return fail("Enter the invite code you were given.", inviteEl); }
     if (pw !== cpw) { return fail("The two passwords do not match.", cpwEl); }
+    if (pw.length < 10) { return fail("Password must be at least 10 characters.", pwEl); }
 
     busy(true);
 
-    PGAuth.signUp({ name: name, email: email, password: pw, invite: isFirst ? "" : invite })
+    PGAuth.signUp({ name: name, email: email, password: pw, invite: invite || "" })
       .then(function (res) {
         if (!res.ok) { return fail(res.error || "Could not create the account."); }
 

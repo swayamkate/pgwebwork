@@ -495,7 +495,12 @@
     /* True while no account exists at all. The very first sign-up claims the
        property and becomes the owner; everyone after that needs an invite. */
     needsBootstrap: function () {
-      if (client) { return Promise.resolve(false); }
+      if (client) {
+        /* Check if any profiles exist — if not, first user becomes owner */
+        return client.from("profiles").select("id").limit(1).then(function (res) {
+          return !(res && res.data && res.data.length);
+        }).catch(function () { return false; });
+      }
       return ready.then(function () { return loadDb().users.length === 0; });
     },
 
@@ -522,15 +527,47 @@
       var code = tidyCode(o.invite);
 
       if (client) {
-        return client.auth.signUp({
-          email: mail,
-          password: pw,
-          options: { data: { full_name: name, invite: code } }
-        }).then(function (res) {
-          if (res.error) { return fail(res.error.message); }
-          return { ok: true, needsConfirm: !(res.data && res.data.session) };
-        }, function (err) {
-          return fail(err && err.message ? err.message : "Could not reach Supabase.");
+        return client.from("profiles").select("id").limit(1).then(function (check) {
+          var isFirst = !(check && check.data && check.data.length);
+          var role = isFirst ? "owner" : "staff";
+          return client.auth.signUp({
+            email: mail,
+            password: pw,
+            options: { data: { full_name: name, role: role } }
+          }).then(function (res) {
+            if (res.error) { return fail(res.error.message); }
+            /* Auto-create profile row */
+            if (res.data && res.data.user) {
+              client.from("profiles").upsert({
+                id: res.data.user.id,
+                name: name,
+                role: role
+              }, { onConflict: "id" }).then(function () {}, function () {});
+              /* Auto-create property row for owner */
+              if (isFirst) {
+                client.from("properties").upsert({
+                  id: res.data.user.id,
+                  owner_id: res.data.user.id,
+                  name: "",
+                  owner_name: name
+                }, { onConflict: "id" }).then(function () {}, function () {});
+              }
+            }
+            return { ok: true, needsConfirm: !(res.data && res.data.session) };
+          }, function (err) {
+            return fail(err && err.message ? err.message : "Could not reach Supabase.");
+          });
+        }).catch(function () {
+          return client.auth.signUp({
+            email: mail,
+            password: pw,
+            options: { data: { full_name: name, role: "staff" } }
+          }).then(function (res) {
+            if (res.error) { return fail(res.error.message); }
+            return { ok: true, needsConfirm: !(res.data && res.data.session) };
+          }, function (err) {
+            return fail(err && err.message ? err.message : "Could not reach Supabase.");
+          });
         });
       }
 
