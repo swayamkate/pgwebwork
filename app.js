@@ -529,8 +529,8 @@ function renderTenants() {
   blank.hidden = true;
   blank.innerHTML = "";
 
-  const actions = (t) => {
-    const id = `dd-${t.roomId}-${t.bedIndex}`;
+  const actions = (t, prefix) => {
+    const id = `${prefix}dd-${t.roomId}-${t.bedIndex}`;
     return `<span class="dd-wrap">
       <button class="dd-trigger" type="button" data-dd="${id}" aria-haspopup="true" aria-expanded="false">\u22ee</button>
       <span class="dd-menu" id="${id}" role="menu" hidden>
@@ -554,7 +554,7 @@ function renderTenants() {
       <td>${prettyDate(t.joined)}</td>
       <td class="mono">${money(t.rent)}${t.hasCustomRent ? ' <span class="tag-custom">custom</span>' : ""}</td>
       <td><span class="badge badge-${t.status}">${BADGE[t.status]}</span></td>
-      <td class="row-actions">${actions(t)}</td>
+      <td class="row-actions">${actions(t, 'tbl-')}</td>
     </tr>`).join("");
 
   el("tenant-cards").innerHTML = list.map((t) => `
@@ -569,7 +569,7 @@ function renderTenants() {
         <div><b>Phone</b>${esc(t.phone) || "\u2014"}</div>
         <div><b>Joined</b>${prettyDate(t.joined)}</div>
       </div>
-      <div class="row-actions">${actions(t)}</div>
+      <div class="row-actions">${actions(t, 'c-')}</div>
     </div>`).join("");
 }
 
