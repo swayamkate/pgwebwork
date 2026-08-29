@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = "pg-manager-cache-v4";
+﻿const CACHE_NAME = "pg-manager-cache-v5";
 const ASSETS = [
   "./",
 
