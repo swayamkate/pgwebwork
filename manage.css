@@ -37,6 +37,7 @@
 .link-btn{transition:color .15s ease, opacity .15s ease}
 .link-btn:hover{text-decoration:underline;text-underline-offset:3px;opacity:.85}
 .link-btn:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.link-btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none;text-decoration:none}
 .link-danger{color:var(--red)}
 .row-actions{display:flex;gap:14px;white-space:nowrap}
 .tcard .row-actions{margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}

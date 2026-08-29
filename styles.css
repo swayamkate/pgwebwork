@@ -287,6 +287,7 @@ h2{font-size:16.5px;letter-spacing:-.018em;font-weight:650;line-height:1.35;marg
 .btn-ghost:hover{color:var(--text);border-color:var(--border-strong);box-shadow:var(--shadow-md)}
 .btn-ghost:active{transform:translateY(1px)}
 .btn-ghost:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.btn-ghost:disabled{opacity:.45;cursor:not-allowed;pointer-events:none;transform:none;box-shadow:none}
 
 .icon-btn{
   appearance:none;width:36px;height:36px;display:flex;align-items:center;justify-content:center;
@@ -295,6 +296,7 @@ h2{font-size:16.5px;letter-spacing:-.018em;font-weight:650;line-height:1.35;marg
 }
 .icon-btn:hover{color:var(--text);border-color:var(--border-strong)}
 .icon-btn:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.icon-btn:disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
 .icon-btn .i-sun{display:none}
 [data-theme="dark"] .icon-btn .i-sun{display:block}
 [data-theme="dark"] .icon-btn .i-moon{display:none}

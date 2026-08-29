@@ -919,24 +919,27 @@ function renderOwnerActions() {
   const t = totals();
   const list = tenants();
   const unpaid = list.filter((x) => !x.paid);
+  const paid = list.filter((x) => x.paid);
+  const allPaid = list.length > 0 && unpaid.length === 0;
+  const noTenants = list.length === 0;
 
   el("owner-actions").innerHTML = `
     <div class="oa-grid">
-      <button class="oa-card" type="button" data-act="bulk-mark-paid">
+      <button class="oa-card" type="button" data-act="bulk-mark-paid" ${allPaid ? 'disabled title="All tenants already paid"' : noTenants ? 'disabled title="No tenants to mark"' : ''}>
         <span class="oa-icon oa-green">\u2713</span>
-        <span class="oa-text"><b>Mark all rent paid</b><span>Mark every tenant as paid for this month</span></span>
+        <span class="oa-text"><b>Mark all rent paid</b><span>${allPaid ? 'All tenants are already paid for this month' : noTenants ? 'Add tenants first' : 'Mark every tenant as paid for this month'}</span></span>
       </button>
-      <button class="oa-card" type="button" data-act="bulk-whatsapp" ${!unpaid.length ? 'disabled' : ''}>
+      <button class="oa-card" type="button" data-act="bulk-whatsapp" ${!unpaid.length ? 'disabled title="No unpaid tenants"' : ''}>
         <span class="oa-icon oa-blue">\ud83d\udcac</span>
-        <span class="oa-text"><b>Broadcast WhatsApp</b><span>Send rent reminder to all unpaid tenants (${unpaid.length})</span></span>
+        <span class="oa-text"><b>Broadcast WhatsApp</b><span>${unpaid.length ? 'Send rent reminder to ' + unpaid.length + ' unpaid tenant' + (unpaid.length !== 1 ? 's' : '') : 'All tenants have paid'}</span></span>
       </button>
       <button class="oa-card" type="button" data-act="export-all">
         <span class="oa-icon oa-amber">\u2b07</span>
         <span class="oa-text"><b>Export all data</b><span>Download complete backup as JSON file</span></span>
       </button>
-      <button class="oa-card" type="button" data-act="send-receipt-all" ${!t.collected ? 'disabled' : ''}>
+      <button class="oa-card" type="button" data-act="send-receipt-all" ${!t.collected ? 'disabled title="No rent collected yet"' : ''}>
         <span class="oa-icon oa-purple">\ud83d\udcc4</span>
-        <span class="oa-text"><b>Send receipts</b><span>Send WhatsApp receipts to all paid tenants</span></span>
+        <span class="oa-text"><b>Send receipts</b><span>${t.collected ? 'Send receipts to ' + paid.length + ' paid tenant' + (paid.length !== 1 ? 's' : '') : 'No rent collected this month'}</span></span>
       </button>
     </div>`;
 }
@@ -1001,6 +1004,9 @@ function renderDataActions() {
   const totalExpenses = (s.expenses || []).reduce((sum, e) => sum + e.amount, 0);
   const totalDeposits = list.filter((t) => t.deposit > 0).reduce((sum, t) => sum + t.deposit, 0);
   const dataSizeKB = Math.round(JSON.stringify(s).length / 1024);
+  const hasData = t.rooms > 0 || t.occupied > 0 || (s.expenses || []).length > 0;
+  const hasExpenses = (s.expenses || []).length > 0;
+  const hasRooms = t.rooms > 0;
 
   el("data-actions").innerHTML = `
     <div class="oa-grid">
@@ -1015,17 +1021,17 @@ function renderDataActions() {
         <div class="data-stat-row"><span>Data size</span><span>${dataSizeKB} KB</span></div>
       </div>
       <div class="data-btn-col">
-        <button class="oa-card" type="button" data-act="download-backup">
+        <button class="oa-card" type="button" data-act="download-backup" ${!hasData ? 'disabled title="No data to back up"' : ''}>
           <span class="oa-icon oa-green">\u2b07</span>
-          <span class="oa-text"><b>Download backup</b><span>Save all your data as a JSON file</span></span>
+          <span class="oa-text"><b>Download backup</b><span>${hasData ? 'Save all your data as a JSON file' : 'Add rooms or tenants first'}</span></span>
         </button>
         <button class="oa-card" type="button" data-act="import-backup">
           <span class="oa-icon oa-blue">\u2b06</span>
           <span class="oa-text"><b>Restore from backup</b><span>Import a previously saved JSON backup</span></span>
         </button>
-        <button class="oa-card oa-danger" type="button" data-act="reset-all">
+        <button class="oa-card oa-danger" type="button" data-act="reset-all" ${!hasData ? 'disabled title="Nothing to reset"' : ''}>
           <span class="oa-icon oa-red">\u2716</span>
-          <span class="oa-text"><b>Reset all data</b><span>Clear everything and start fresh (cannot be undone)</span></span>
+          <span class="oa-text"><b>Reset all data</b><span>${hasData ? 'Clear everything and start fresh (cannot be undone)' : 'No data to clear'}</span></span>
         </button>
       </div>
     </div>`;
@@ -1129,8 +1135,81 @@ function resetAllData() {
 
 function renderAll() {
   const s = PGStore.state();
+  const t = totals();
+  const list = tenants();
+  const isEmpty = PGStore.isEmpty();
+  
   el("brand-prop").textContent = s.property || "Name your property";
-  el("setup").hidden = !PGStore.isEmpty();
+  el("setup").hidden = !isEmpty;
+  
+  /* Topbar — show property name on the button when set */
+  var nameBtn = document.querySelector('[data-act="name-property"]');
+  if (nameBtn && nameBtn.closest('.topbar-right')) {
+    nameBtn.textContent = s.property || 'Name property';
+  }
+  
+  /* Disable setup buttons when not needed */
+  var hasRooms = s.rooms && s.rooms.length > 0;
+  var hasProperty = !!(s.property && s.property.trim());
+  var setupCard = el("setup");
+  if (!isEmpty) {
+    setupCard.hidden = true;
+  } else {
+    setupCard.hidden = false;
+    /* Update setup card message based on progress */
+    var setupMsg = setupCard.querySelector('.sub');
+    if (setupMsg) {
+      if (hasProperty && hasRooms) {
+        setupMsg.textContent = 'Rooms are ready — move tenants into beds to start tracking rent.';
+      } else if (hasProperty) {
+        setupMsg.textContent = 'Property named! Add your rooms next, then move tenants into beds.';
+      } else {
+        setupMsg.textContent = 'This account is empty. Name the property, add your rooms, then move tenants into beds.';
+      }
+    }
+    /* Show/hide individual setup actions based on state */
+    var setupBtns = setupCard.querySelectorAll('[data-act]');
+    setupBtns.forEach(function(btn) {
+      var act = btn.getAttribute('data-act');
+      if (act === 'name-property') {
+        btn.style.display = hasProperty ? 'none' : '';
+      } else if (act === 'add-room') {
+        btn.style.display = hasRooms ? 'none' : '';
+      } else {
+        btn.style.display = '';
+      }
+    });
+  }
+  
+  /* --- Smart button states across all tabs --- */
+  var hasExpenses = (s.expenses || []).length > 0;
+  var hasLedger = (s.ledger || []).length > 0;
+  var hasVacant = t.vacant > 0;
+  var hasTenants = list.length > 0;
+  
+  /* Add tenant — disable if no vacant beds */
+  var addTenantBtn = document.querySelector('#view-tenants [data-act="add-tenant"]');
+  if (addTenantBtn) {
+    addTenantBtn.disabled = !hasVacant;
+    addTenantBtn.title = hasVacant ? 'Add a new tenant' : 'No vacant beds — add a room first';
+  }
+  
+  /* Export buttons — disable when no data */
+  var exportLedger = document.querySelector('[data-act="export-ledger"]');
+  if (exportLedger) {
+    exportLedger.disabled = !hasLedger;
+    exportLedger.title = hasLedger ? 'Export rent ledger' : 'No payment history yet';
+  }
+  var exportTenants = document.querySelector('[data-act="export-tenants"]');
+  if (exportTenants) {
+    exportTenants.disabled = !hasTenants;
+    exportTenants.title = hasTenants ? 'Export tenant list' : 'No tenants yet';
+  }
+  var exportExpenses = document.querySelector('[data-act="export-expenses"]');
+  if (exportExpenses) {
+    exportExpenses.disabled = !hasExpenses;
+    exportExpenses.title = hasExpenses ? 'Export expenses' : 'No expenses logged yet';
+  }
   /* Each render is wrapped so one failure never kills the rest. */
   var fns = [
     renderStats, renderGraph, renderRentStatus, renderFloors, renderFeed,
@@ -1508,6 +1587,8 @@ document.addEventListener("click", (e) => {
 
   const btn = e.target.closest("[data-act]");
   if (!btn) { return; }
+  /* Ignore clicks on disabled buttons */
+  if (btn.disabled) { return; }
   /* Close the parent dropdown if this action came from one */
   const parentMenu = btn.closest(".dd-menu");
   if (parentMenu) { parentMenu.hidden = true; }
