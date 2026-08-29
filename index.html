@@ -35,11 +35,18 @@ html.auth-pending body{visibility:hidden}
 <script src="store.js?v=13"></script>
 <script src="sheets.js?v=13"></script>
 <script>
-  // Register PWA Service Worker
+  // Unregister any old service workers that may be serving stale cache.
+  // SW is disabled — all files load fresh from the network every time.
   if ("serviceWorker" in navigator) {
-    window.addEventListener("load", function () {
-      navigator.serviceWorker.register("./sw.js").catch(function () {});
-    });
+    navigator.serviceWorker.getRegistrations().then(function (regs) {
+      regs.forEach(function (r) { r.unregister(); });
+    }).catch(function () {});
+    // Also clear all caches
+    if ("caches" in window) {
+      caches.keys().then(function (keys) {
+        keys.forEach(function (k) { caches.delete(k); });
+      }).catch(function () {});
+    }
   }
 </script>
 <script>
