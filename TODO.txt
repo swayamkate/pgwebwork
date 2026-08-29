@@ -1,0 +1,237 @@
+╔══════════════════════════════════════════════════════════════╗
+║          PG MANAGER — THINGS TO DO                         ║
+║          Last updated: August 29, 2026                     ║
+╚══════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔴  CRITICAL — DO THESE FIRST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ]  1. Hard refresh your browser (Ctrl+Shift+R) to clear
+       the broken service worker cache. This is why nothing
+       was working — old cached files were being served.
+
+[ ]  2. Verify the live site at pg.swayamkate.com — check
+       that dashboard, beds, tenants, rent, expenses, owner
+       tabs all render and buttons work.
+
+[ ]  3. Test on your phone — open the site on mobile and
+       check the new landing page, animations, and touch
+       targets.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🟡  IMPORTANT — SHOULD DO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ]  4. Add your Supabase tables — the app tries to sync to
+       Supabase but the tables might not exist. Run the SQL
+       from the earlier session in your Supabase dashboard.
+
+[ ]  5. Test the import flow — upload a CSV/Excel file and
+       make sure the smart import reads it correctly.
+       Try pasting from Google Sheets too.
+
+[ ]  6. Test toast notifications — add a room, add a tenant,
+       mark rent paid, export CSV. You should see green
+       slide-in toasts for every action.
+
+[ ]  7. Test custom confirm dialogs — try deleting a room
+       or resetting data. You should see styled modals,
+       not ugly browser alerts.
+
+[ ]  8. Test Owner tab Quick Actions — Mark all paid,
+       Broadcast WhatsApp, Export all data. Buttons should
+       disable when not needed (e.g., all already paid).
+
+[ ]  9. Check the Issues tab — log an issue, update its
+       status, verify the filter pills (All/Open/In Progress/
+       Resolved) work with live counts.
+
+[ ] 10. Test the export buttons — Export Ledger CSV, Export
+       Tenants CSV, Export Expenses CSV should all download
+       files. They should be disabled when there's no data.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🟢  NICE TO HAVE — POLISH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] 11. Add a few rooms and tenants — test the full flow
+       with real data to see if everything renders correctly.
+
+[ ] 12. Check the rent tab — mark individual tenants as
+       paid, verify the undo button works, check the stats
+       (Expected/Collected/Pending).
+
+[ ] 13. Check the topbar — it should show your actual
+       property name instead of generic "Property name".
+
+[ ] 14. Test dark/light mode toggle — both on the landing
+       page and inside the dashboard.
+
+[ ] 15. Test backup/restore — download a JSON backup from
+       Data Management, then restore it. Verify data comes
+       back correctly.
+
+[ ] 16. Check the rate card — add a rate in the Owner tab,
+       verify it shows in the rate card dialog.
+
+[ ] 17. Test PG House Rules — add rules (visiting hours,
+       quiet hours, etc.) in Owner tab, verify they display.
+
+[ ] 18. Test the tenant backfill — open a tenant's action
+       menu, click Backfill, check past months as paid.
+
+[ ] 19. Test the transfer tenant flow — move a tenant to a
+       different bed and verify the toast confirms it.
+
+[ ] 20. Test the check-out flow — check out a tenant with
+       settlement, verify the toast and that the bed
+       becomes vacant.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔵  FUTURE FEATURES — WHEN READY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] 21. Push notifications — remind tenants when rent is
+       due via browser push notifications.
+
+[ ] 22. Undo last action — toast with an undo button that
+       stays for 5 seconds before disappearing.
+
+[ ] 23. Multi-property support — manage multiple PGs from
+       one owner account.
+
+[ ] 24. Tenant profile pages — detailed financial history,
+       payment timeline, and rent ledger per tenant.
+
+[ ] 25. AI assistant — answer questions like "who hasn't
+       paid rent?" or "how much was collected this month?"
+
+[ ] 26. Offline mode — queue changes when offline, sync
+       automatically when back online.
+
+[ ] 27. Custom expense categories — let the owner add
+       their own categories (e.g., "Laundry", "Security").
+
+[ ] 28. Tenant onboarding — share a link with tenants so
+       they can view their rent status and payment history.
+
+[ ] 29. Receipt PDF generation — auto-generate professional
+       receipts with PG details and rules.
+
+[ ] 30. Monthly reports — auto-generated PDF reports with
+       revenue, expenses, profit, and occupancy charts.
+
+[ ] 31. SMS/WhatsApp integration — send rent reminders
+       and receipts directly from the app.
+
+[ ] 32. Multi-language support — Hindi, Marathi, Tamil
+       for non-English speaking owners.
+
+[ ] 33. Dark mode scheduling — auto-switch between dark
+       and light mode based on time of day.
+
+[ ] 34. Dashboard widgets — customizable widget layout
+       so owners can rearrange their overview.
+
+[ ] 35. Expense categories with budgets — set monthly
+       budgets per category and get alerts when exceeded.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋  WHAT'S ALREADY BUILT (v1.0)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅  Dashboard with stats, monthly graph, rent status,
+    occupancy bars, recent activity, expense breakdown
+
+✅  Beds tab — visual room/bed layout with status colors
+
+✅  Tenants tab — table/card view with actions menu
+
+✅  Rent tab — payment log with mark paid/undo
+
+✅  Expenses tab — spending log with stats
+
+✅  Issues tab — maintenance tracking with filter pills
+
+✅  Owner tab — settings, rate card, quick actions,
+    security deposits, house rules, data management
+
+✅  Smart import — reads CSV, Excel, JSON, PDF, images,
+    Google Sheets paste, with template downloads
+
+✅  Toast notifications — success/error/info/warn for
+    every action (no more ugly browser alerts)
+
+✅  Custom confirm dialogs — styled modals replace
+    native confirm() for all destructive actions
+
+✅  Smart buttons — disable when not needed (all paid,
+    no vacant beds, no data to export)
+
+✅  Premium mobile landing page — animations, glass
+    morphism, touch-optimized form inputs
+
+✅  Dark/light theme with system preference detection
+
+✅  Google Sheets backup/restore
+
+✅  Supabase cloud sync (async, fault-tolerant)
+
+✅  PWA support with service worker
+
+✅  WhatsApp integration for reminders and receipts
+
+✅  Digital rent receipts with print/share
+
+✅  Tenant transfer and check-out with settlement
+
+✅  Backfill payment history for past months
+
+✅  Property name, owner details, PG rules
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🛠️  TECHNICAL NOTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+•  Service Worker (sw.js) v5 — network-first strategy,
+   no .html files in cache (Cloudflare returns 308)
+
+•  Cache busting — all JS/CSS files use ?v=12 query
+   strings. Bump these when deploying changes.
+
+•  Debounced commit — rapid changes batch into one
+   render (30ms window).
+
+•  Lazy rendering — only the active tab renders
+   immediately. Other tabs deferred via
+   requestAnimationFrame.
+
+•  System fonts — no web font loading. Font stack:
+   Inter, system-ui, -apple-system, sans-serif.
+
+•  All buttons have 44px minimum touch targets on mobile.
+
+•  Zero native alert() or confirm() calls remain.
+
+•  File structure:
+    index.html      — Main dashboard (862 lines)
+    app.js           — Core logic + render functions (2123 lines)
+    store.js         — Data store (PGStore) (1157 lines)
+    import.js        — Smart import system (1154 lines)
+    auth.js          — Authentication (883 lines)
+    supabase-storage.js — Cloud sync (348 lines)
+    profile.js       — Tenant profiles (404 lines)
+    rent.js          — Rent management (378 lines)
+    account.js       — Account settings (338 lines)
+    sheets.js        — Google Sheets integration
+    styles.css       — Base styles + theme (620 lines)
+    manage.css       — Management page styles (620 lines)
+    mobile-auth.css  — Mobile landing page (695 lines)
+    sw.js            — Service worker
+    config.js        — Supabase config
