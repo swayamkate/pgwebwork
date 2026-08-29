@@ -457,6 +457,9 @@
         return;
       }
 
+      /* Skip vacant rows — no tenant name means this bed is empty */
+      if (!tenant) { return; }
+
       /* --- Parse compound bed numbers like 0101, 0201, 1201 ---
          Pattern: first 2 digits = room, last 2 digits = bed position.
          e.g. 0101 → Room 01 Bed A, 0201 → Room 02 Bed A, etc.
@@ -510,7 +513,8 @@
         return;
       }
 
-      if (!tenant) { return; }   // a real row for an empty bed
+      /* tenant check already done above — skip if somehow still empty */
+      if (!tenant) { return; }
 
       var joined = toDate(get("joined"));
       if (joined === null) {
