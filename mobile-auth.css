@@ -65,6 +65,8 @@
     flex-direction: column;
     min-height: 100vh;
     min-height: 100dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .auth-left {
@@ -171,6 +173,8 @@
     min-height: 100dvh;
     padding: 0;
     background: var(--surface);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* ---- Hero Section ---- */
