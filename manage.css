@@ -580,3 +580,41 @@ button.bed-add:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 }
 .bf-month-item label{cursor:pointer;margin:0;font-size:inherit;line-height:1}
 .bf-already{font-size:11px;font-weight:500;color:var(--green);margin-left:auto}
+
+/* ========== MOBILE RESPONSIVENESS ========== */
+@media (max-width:640px){
+  /* Owner action grid — single column on mobile */
+  .oa-grid{grid-template-columns:1fr !important}
+  .oa-card{padding:14px 16px !important}
+  /* Data stat card — full width on mobile */
+  .data-stat-card{padding:16px !important}
+  .data-btn-col{gap:8px}
+  /* Complaint cards — better spacing */
+  .comp-card{padding:14px !important}
+  /* Rules display */
+  .rules-item{padding:10px 0}
+  /* Backfill grid */
+  .bf-months-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px}
+  .bf-month-item{padding:8px 10px;font-size:12.5px}
+  /* Receipt dialog */
+  .dlg-wide{max-width:100vw !important;margin:8px !important}
+  .receipt-paper{padding:20px !important}
+  /* Import dialog */
+  .imp-drop{padding:20px !important}
+  .imp-example-grid{grid-template-columns:1fr !important}
+  /* Transfer dialog */
+  .dlg .form-grid{gap:12px}
+  /* Offboard dialog */
+  .ob-calc-card{padding:14px !important}
+  /* Better touch targets for all interactive elements */
+  .oa-card,.link-btn,.dd-item,.comp-card .link-btn{
+    min-height:44px;display:flex;align-items:center
+  }
+}
+
+@media (max-width:380px){
+  .oa-card{padding:12px !important}
+  .oa-card .oa-icon{width:32px !important;height:32px !important}
+  .oa-text b{font-size:12.5px !important}
+  .oa-text span{font-size:11.5px !important}
+}

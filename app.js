@@ -1210,15 +1210,43 @@ function renderAll() {
     exportExpenses.disabled = !hasExpenses;
     exportExpenses.title = hasExpenses ? 'Export expenses' : 'No expenses logged yet';
   }
-  /* Each render is wrapped so one failure never kills the rest. */
-  var fns = [
-    renderStats, renderGraph, renderRentStatus, renderFloors, renderFeed,
-    renderExpDashboard, renderRooms, renderTenants, renderRent, renderExpenses,
-    renderComplaints, renderOwner, renderSettings, renderRates, applyFloorSetting,
-    renderOwnerActions, renderDeposits, renderRules, renderDataActions
-  ];
-  fns.forEach(function (fn) { try { fn(); } catch (err) { console.error(err); } });
-}
+  /* --- Lazy rendering: active tab first, others deferred --- */
+  var activeView = location.hash.slice(1) || 'dashboard';
+  
+  /* Always render dashboard stats (shown in header area) */
+  var alwaysFns = [renderStats];
+  
+  /* Map views to their render functions */
+  var viewFns = {
+    dashboard: [renderGraph, renderRentStatus, renderFloors, renderFeed, renderExpDashboard],
+    beds:      [renderRooms],
+    tenants:   [renderTenants],
+    rent:      [renderRent],
+    expenses:  [renderExpenses],
+    complaints:[renderComplaints],
+    owner:     [renderOwner, renderSettings, renderRates, applyFloorSetting,
+                renderOwnerActions, renderDeposits, renderRules, renderDataActions]
+  };
+  
+  /* Render active tab immediately */
+  var activeFns = viewFns[activeView] || viewFns.dashboard;
+  var deferredFns = [];
+  Object.keys(viewFns).forEach(function (key) {
+    if (key !== activeView) {
+      viewFns[key].forEach(function (fn) { deferredFns.push(fn); });
+    }
+  });
+  
+  function runFns(fns) {
+    fns.forEach(function (fn) { try { fn(); } catch (err) { console.error(err); } });
+  }
+  
+  runFns(alwaysFns.concat(activeFns));
+  
+  /* Defer non-active tabs to next frame so the active tab paints first */
+  if (deferredFns.length) {
+    requestAnimationFrame(function () { runFns(deferredFns); });
+  }
 
 /* ---------- backup ---------- */
 
@@ -1239,12 +1267,28 @@ function renderBackup(s) {
 }
 
 /* Redraw, then send the change to the sheet and Supabase. */
+/* ---------- debounce helper ---------- */
+var _commitTimer = null;
 function commit() {
+  /* Debounce: if multiple changes happen within 30ms, only render once. */
+  if (_commitTimer) { clearTimeout(_commitTimer); }
+  _commitTimer = setTimeout(function () {
+    _commitTimer = null;
+    renderAll();
+    if (window.PGSheets) { PGSheets.schedule(PGStore.state()); }
+    if (window.SupabaseStorage && SupabaseStorage.isAvailable()) {
+      SupabaseStorage.save(PGStore.state()).catch(function () {});
+    }
+  }, 30);
+}
+
+/* Immediate commit — bypasses debounce, used for critical saves. */
+function commitNow() {
+  if (_commitTimer) { clearTimeout(_commitTimer); _commitTimer = null; }
   renderAll();
   if (window.PGSheets) { PGSheets.schedule(PGStore.state()); }
-  /* Sync to Supabase if connected. */
   if (window.SupabaseStorage && SupabaseStorage.isAvailable()) {
-    SupabaseStorage.save(PGStore.state()).catch(function () { /* offline, will retry next change */ });
+    SupabaseStorage.save(PGStore.state()).catch(function () {});
   }
 }
 
@@ -1868,7 +1912,8 @@ el("form-backfill").addEventListener("submit", (e) => {
 function show(view) {
   document.querySelectorAll(".view").forEach((v) => v.classList.toggle("is-active", v.id === "view-" + view));
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("is-active", t.dataset.view === view));
-  window.scrollTo({ top: 0 });
+  /* Smooth scroll to top with momentum on mobile */
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 el("tabs").addEventListener("click", (e) => {
@@ -1927,15 +1972,23 @@ function boot(session) {
     PGSheets.onStatus(renderBackup);
   }
 
-  /* Connect to Supabase data storage if available. */
+  /* Show header immediately — don't wait for anything */
+  el("greet").textContent = greeting() + ", " + String(name).split(" ")[0];
+  el("avatar").textContent = initials(name);
+  el("avatar").title = name;
+  el("stamp").textContent = new Date().toLocaleDateString("en-IN", {
+    weekday: "short", day: "numeric", month: "short", year: "numeric"
+  });
+
+  /* Render from localStorage instantly (fast path) */
+  renderAll();
+  show(location.hash.slice(1) || "dashboard");
+n  /* Connect to Supabase data storage if available (async, non-blocking). */
   if (window.SupabaseStorage) {
     SupabaseStorage.init(accountId);
-    /* Load data from Supabase if available (async). localStorage is used
-       as the immediate source; Supabase data merges in when ready. */
     if (SupabaseStorage.isAvailable()) {
       SupabaseStorage.load().then(function (data) {
         if (data && data.rooms && data.rooms.length) {
-          /* Only replace if Supabase has actual data and local is empty. */
           if (PGStore.isEmpty()) {
             PGStore.replaceAll({
               property: PGStore.state().property || "",
@@ -1952,19 +2005,9 @@ function boot(session) {
             renderAll();
           }
         }
-      }).catch(function () { /* offline or table missing — localStorage is fine */ });
+      }).catch(function () {});
     }
   }
-
-  el("greet").textContent = greeting() + ", " + String(name).split(" ")[0];
-  el("avatar").textContent = initials(name);
-  el("avatar").title = name;
-  el("stamp").textContent = new Date().toLocaleDateString("en-IN", {
-    weekday: "short", day: "numeric", month: "short", year: "numeric"
-  });
-
-  renderAll();
-  show(location.hash.slice(1) || "dashboard");
 }
 
 try {

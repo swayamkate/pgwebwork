@@ -518,3 +518,65 @@ h2{font-size:16.5px;letter-spacing:-.018em;font-weight:650;line-height:1.35;marg
 .code-input{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase}
 
 .auth-note{margin:0 0 16px;padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.5;background:var(--amber-soft);color:var(--amber)}
+
+/* ========== PERFORMANCE ========== */
+/* GPU-accelerate animated properties for smoother 60fps rendering. */
+.stat,.room,.bed,.card,.btn-primary,.btn-ghost,.icon-btn,.oa-card,.tab,.pill,
+.topbar,.tabs,.view,.auth-left,.auth-right,.auth-feature,.dd-menu,.dd-item{
+  will-change:transform
+}
+/* containment tells the browser this element's internals don't affect layout outside */
+.card,.stat,.room,.feed li,.paylist li,.table td{
+  contain:layout style
+}
+/* Smooth scrolling with momentum on iOS */
+html{
+  -webkit-overflow-scrolling:touch;
+  scroll-behavior:smooth
+}
+.table-scroll,.tabs-in{
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain
+}
+/* Reduce paint area for expensive elements */
+.stat::after,.room::after{contain:layout style paint}
+/* Debounce transition on hover to prevent jank on rapid mouse movement */
+.stat,.room,.bed{transition:transform .25s cubic-bezier(.2,.8,.3,1),box-shadow .25s ease,border-color .25s ease}
+
+/* ========== RESPONSIVE — MOBILE ========== */
+@media (max-width:640px){
+  /* Larger touch targets */
+  .btn-ghost,.icon-btn,.link-btn,.tab,.pill,.oa-card,.dd-item{
+    min-height:44px
+  }
+  .icon-btn{width:44px;height:44px}
+  .tab{padding:10px 14px;font-size:13.5px}
+  /* Smooth tab transitions */
+  .tabs-in{transition:transform .2s ease}
+  /* Better card spacing on small screens */
+  .card{padding:18px;border-radius:14px}
+  .stat{padding:14px;border-radius:14px}
+  .stat-value{font-size:22px}
+  /* Stack stats on very small screens */
+  @media (max-width:380px){
+    .stats{grid-template-columns:1fr 1fr;gap:8px}
+    .stat{padding:12px}
+    .stat-value{font-size:20px}
+    .stat-label{font-size:11px}
+  }
+  /* Better mobile dialog sizing */
+  .dlg-card{padding:20px;border-radius:18px;max-height:90vh;overflow-y:auto}
+  /* Prevent horizontal scroll on mobile */
+  body{overflow-x:hidden}
+  /* Smooth page transitions */
+  .view.is-active{animation:rise .2s ease both}
+  /* Better dropdown positioning on mobile */
+  .dd-menu{max-height:60vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+}
+
+@media (max-width:900px){
+  /* Better tablet layout */
+  .cols{gap:14px}
+  .rooms{gap:14px}
+  .stats{gap:14px}
+}
