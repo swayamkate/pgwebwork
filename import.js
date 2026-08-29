@@ -521,23 +521,39 @@
 
       var bedCustomRent = (rent > 0 && room.rent > 0 && rent !== room.rent) ? rent : null;
 
-      /* Detect if any month column has a payment value */
+      /* --- Detect paid months from month payment columns --- */
+      var MONTH_MAP = { jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+        jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12' };
+      var paidMonths = [];
       var hasMonthPayment = false;
       if (map.paid !== undefined) {
-        /* Check the primary paid column */
         var pv = norm(get("paid")).toLowerCase();
         hasMonthPayment = truthy(get("paid")) || /paid|yes|y|\u2713|\u2714/.test(pv);
       }
-      /* Also check all month payment columns for any value */
-      if (!hasMonthPayment) {
-        for (var fi in map) {
-          if (/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/.test(fi)) {
-            var v = num(get(fi));
-            if (v > 0) { hasMonthPayment = true; break; }
+      /* Scan all columns for month payment patterns */
+      var headerCells = rows[headerIndex] || [];
+      for (var ci = 0; ci < headerCells.length; ci++) {
+        var hk = key(headerCells[ci]);
+        var mMatch = hk.match(/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/);
+        if (mMatch && /payment|pay$/.test(hk)) {
+          var monthNum = MONTH_MAP[mMatch[1]];
+          /* Extract year from header: "april26payment" → 26 → 2026 */
+          var yrMatch = hk.match(/(\d{2,4})/);
+          var year = '2026';
+          if (yrMatch) {
+            var yr = parseInt(yrMatch[1], 10);
+            year = yr > 100 ? String(yr) : '20' + String(yr);
+          }
+          var cellVal = num(cells[ci]);
+          if (cellVal > 0) {
+            var monthKey = year + '-' + monthNum;
+            if (paidMonths.indexOf(monthKey) === -1) { paidMonths.push(monthKey); }
+            hasMonthPayment = true;
           }
         }
       }
-      /* If tenant name exists and has any payment, mark as paid */
+      paidMonths.sort();
+      /* Current month is also paid if tenant has any payment */
       var isPaid = hasMonthPayment || (tenant && map.paid !== undefined && truthy(get("paid")));
 
       room.beds[idx] = {
@@ -547,6 +563,7 @@
         rent: bedCustomRent,
         deposit: map.deposit !== undefined ? Math.round(num(get("deposit"))) : 0,
         onNotice: map.notice !== undefined ? truthy(get("notice")) : false,
+        paidMonths: paidMonths,
         paid: isPaid
       };
       used++;
