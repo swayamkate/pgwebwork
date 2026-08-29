@@ -60,7 +60,7 @@
 }
 
 /* ---------- dropdown menu ---------- */
-.dd-wrap{position:relative;display:inline-block}
+.dd-wrap{position:static;display:inline-block}
 .dd-trigger{
   border:0;background:none;color:var(--muted);font-size:18px;line-height:1;
   padding:4px 8px;border-radius:8px;cursor:pointer;
@@ -68,7 +68,7 @@
 }
 .dd-trigger:hover{color:var(--text);background:var(--surface-3)}
 .dd-menu{
-  position:absolute;right:0;top:100%;margin-top:4px;z-index:50;
+  position:fixed;z-index:200;
   min-width:180px;background:var(--surface);border:1px solid var(--border);
   border-radius:12px;padding:4px;box-shadow:var(--shadow-lg);
 }
@@ -681,7 +681,7 @@ button.bed-add:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
   [data-view="owner"]::before{content:"⚙️"}
 
   /* ---- MAIN: space for bottom tabs + safe area ---- */
-  main{padding:16px 14px 80px}
+  main{padding:16px 14px 100px}
   .wrap{padding:0 14px}
 
   /* ---- PAGE HEADS: stacked ---- */

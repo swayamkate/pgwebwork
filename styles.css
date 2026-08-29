@@ -133,7 +133,7 @@ body{
 .tab:focus-visible{outline:2px solid var(--brand);outline-offset:1px}
 
 /* ---------- layout ---------- */
-main{padding:36px 28px 100px}
+main{padding:36px 28px 120px}
 .view{display:none}
 .view.is-active{display:block;animation:rise .28s ease both}
 @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -236,8 +236,8 @@ h2{font-size:16.5px;letter-spacing:-.018em;font-weight:650;line-height:1.35;marg
 .bed-notice{background:var(--amber-soft);border-color:color-mix(in srgb, var(--amber) 30%, transparent);color:var(--amber)}
 
 /* ---------- table ---------- */
-.table-card{padding:0;overflow:visible}
-.table-scroll{overflow:visible}
+.table-card{padding:0;overflow:hidden}
+.table-scroll{overflow-x:auto}
 .table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:680px}
 .table th{
   text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.07em;
@@ -470,7 +470,7 @@ h2{font-size:16.5px;letter-spacing:-.018em;font-weight:650;line-height:1.35;marg
 }
 @media (max-width:640px){
   .wrap{padding:0 16px}
-  main{padding:22px 16px 100px}
+  main{padding:22px 16px 120px}
   h1{font-size:26px}
   /* --- Topbar compact on phone --- */
   .topbar-in{height:56px;gap:8px}

@@ -1739,6 +1739,21 @@ document.addEventListener("click", (e) => {
     document.querySelectorAll(".dd-menu:not([hidden])").forEach((m) => { m.hidden = true; });
     menu.hidden = !open;
     trigger.setAttribute("aria-expanded", String(open));
+    /* Position the fixed menu relative to the trigger button */
+    if (open) {
+      const rect = trigger.getBoundingClientRect();
+      const menuW = 180;
+      let left = rect.right - menuW;
+      let top = rect.bottom + 4;
+      /* Keep within viewport */
+      if (left < 8) left = 8;
+      if (left + menuW > window.innerWidth - 8) left = window.innerWidth - menuW - 8;
+      if (top + 200 > window.innerHeight) { top = rect.top - 4; menu.style.transform = 'translateY(-100%)'; }
+      else { menu.style.transform = 'none'; }
+      menu.style.left = left + 'px';
+      menu.style.top = top + 'px';
+      menu.style.right = 'auto';
+    }
     return;
   }
   /* Close any open menu when clicking elsewhere */
