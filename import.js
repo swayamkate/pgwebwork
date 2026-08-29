@@ -523,7 +523,8 @@
         joined = "";
       }
 
-      var bedCustomRent = (rent > 0 && room.rent > 0 && rent !== room.rent) ? rent : null;
+      /* Always store per-bed rent if available */
+      var bedCustomRent = (rent > 0) ? rent : null;
 
       /* --- Detect paid months from month payment columns --- */
       var MONTH_MAP = { jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',

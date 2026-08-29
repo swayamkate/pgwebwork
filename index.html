@@ -206,6 +206,7 @@ html.auth-pending body{visibility:hidden}
       </div>
       <div class="head-actions">
         <button class="btn-ghost btn-sm" data-act="import-data" type="button">Import</button>
+        <button class="btn-ghost btn-sm" data-act="set-rents" type="button">Set rents</button>
         <button class="btn-primary btn-sm" data-act="add-room" type="button">Add room</button>
       </div>
     </div>
@@ -857,6 +858,19 @@ html.auth-pending body{visibility:hidden}
     <div style="display:flex;gap:10px;justify-content:center">
       <button class="btn-ghost" type="button" id="confirm-cancel">Cancel</button>
       <button class="btn-primary btn-sm" type="button" id="confirm-ok" style="width:auto;min-width:120px"></button>
+    </div>
+  </div>
+</dialog>
+
+<!-- BULK SET RENTS -->
+<dialog class="dlg dlg-wide" id="dlg-setrents">
+  <div class="dlg-card">
+    <h3>Set bed rents</h3>
+    <p class="dlg-sub">Set a rent for each occupied bed. Leave blank to keep the current rent.</p>
+    <div id="setrents-list" style="max-height:60vh;overflow-y:auto"></div>
+    <div class="dlg-foot">
+      <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-setrents">Cancel</button>
+      <button class="btn-primary btn-sm" type="button" id="setrents-save">Save rents</button>
     </div>
   </div>
 </dialog>

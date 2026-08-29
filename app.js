@@ -867,6 +867,53 @@ function renderRates() {
     : '<p class="rate-blank">Nothing on the card yet. Add what you charge for a single, a two sharing, an AC room \u2014 then you can pull it up in front of anyone who asks.</p>';
 }
 
+/* ---- Bulk set rents ---- */
+function openSetRents() {
+  const s = PGStore.state();
+  const list = el('setrents-list');
+  if (!list) return;
+  let html = '';
+  s.rooms.forEach(room => {
+    const occupied = (room.beds || []).filter(b => b && b.name);
+    if (!occupied.length) return;
+    html += '<div style="margin-bottom:14px"><b style="font-size:13px;color:var(--muted)">Room ' + esc(room.no) + ' — ₹' + (room.rent || 0).toLocaleString('en-IN') + '/mo base</b></div>';
+    occupied.forEach((bed, i) => {
+      const idx = room.beds.indexOf(bed);
+      const key = room.id + '-' + idx;
+      const curRent = (bed.rent != null && bed.rent > 0) ? bed.rent : (room.rent || 0);
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">';
+      html += '<span style="flex:1;min-width:0;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(bed.name) + '</span>';
+      html += '<span style="font-size:12px;color:var(--muted);white-space:nowrap">₹</span>';
+      html += '<input type="number" min="0" step="100" value="' + curRent + '" data-rent-key="' + key + '" style="width:100px;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--text);text-align:right">';
+      html += '</div>';
+    });
+  });
+  if (!html) {
+    html = '<p style="color:var(--muted);font-size:13px;padding:16px 0">No occupied beds found. Add tenants first.</p>';
+  }
+  list.innerHTML = html;
+  openDlg('dlg-setrents');
+}
+
+function saveSetRents() {
+  const s = PGStore.state();
+  const inputs = document.querySelectorAll('[data-rent-key]');
+  inputs.forEach(inp => {
+    const parts = inp.dataset.rentKey.split('-');
+    const roomId = parts[0];
+    const bedIdx = parseInt(parts[1], 10);
+    const newRent = Math.round(Number(inp.value) || 0);
+    const room = s.rooms.find(r => r.id === roomId);
+    if (room && room.beds[bedIdx]) {
+      room.beds[bedIdx].rent = newRent > 0 ? newRent : null;
+    }
+  });
+  PGStore.commit(s);
+  toast('Bed rents updated', 'success');
+  closeDlg('dlg-setrents');
+  renderAll();
+}
+
 function openRateCard() {
   const rates = PGStore.state().rates;
   const rooms = roomRates();
@@ -1757,6 +1804,8 @@ document.addEventListener("click", (e) => {
         toast(err && err.message ? err.message : "Could not restore from the sheet.", "error");
       });
     });
+  } else if (act === "set-rents") {
+    openSetRents();
   } else if (act === "rate-card") {
     openRateCard();
   } else if (act === "add-rate") {
@@ -2001,6 +2050,10 @@ el("tabs").addEventListener("click", (e) => {
   const tab = e.target.closest(".tab");
   if (tab) { location.hash = tab.dataset.view; }
 });
+
+/* Set rents save button */
+var setRentBtn = el('setrents-save');
+if (setRentBtn) { setRentBtn.addEventListener('click', saveSetRents); }
 
 /* Complaint filter pills */
 var compFilters = el("comp-filters");
