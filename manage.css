@@ -68,9 +68,10 @@
 }
 .dd-trigger:hover{color:var(--text);background:var(--surface-3)}
 .dd-menu{
-  position:fixed;z-index:200;
+  position:fixed;z-index:1000;
   min-width:180px;background:var(--surface);border:1px solid var(--border);
-  border-radius:12px;padding:4px;box-shadow:var(--shadow-lg);
+  border-radius:12px;padding:4px;box-shadow:0 8px 32px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.25);
+  isolation:isolate;
 }
 .dd-menu[hidden]{display:none}
 .dd-item{

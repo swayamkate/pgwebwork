@@ -1728,6 +1728,39 @@ function exportExpensesCsv() {
 /* ---------- actions ---------- */
 
 /* ---------- dropdown menus ---------- */
+/* Portal: move dd-menu to body to escape overflow containers */
+function ddPortalOpen(menu, trigger) {
+  if (!menu._ported) {
+    menu._originalParent = menu.parentNode;
+    document.body.appendChild(menu);
+    menu._ported = true;
+  }
+  /* Ensure a backdrop exists */
+  let bd = document.getElementById("dd-backdrop");
+  if (!bd) {
+    bd = document.createElement("div");
+    bd.id = "dd-backdrop";
+    bd.style.cssText = "position:fixed;inset:0;z-index:999;background:transparent;";
+    bd.addEventListener("click", ddCloseAll);
+    bd.addEventListener("touchstart", ddCloseAll, { passive: true });
+    document.body.appendChild(bd);
+  }
+  bd.hidden = false;
+}
+function ddCloseAll() {
+  document.querySelectorAll(".dd-menu:not([hidden])").forEach((m) => {
+    m.hidden = true;
+    /* Return to original position */
+    if (m._ported && m._originalParent) {
+      m._originalParent.appendChild(m);
+      m._ported = false;
+    }
+    m.style.cssText = "";
+  });
+  document.querySelectorAll("[aria-expanded]").forEach((b) => { b.setAttribute("aria-expanded", "false"); });
+  const bd = document.getElementById("dd-backdrop");
+  if (bd) bd.hidden = true;
+}
 document.addEventListener("click", (e) => {
   /* Toggle dropdown on trigger click */
   const trigger = e.target.closest("[data-dd]");
@@ -1736,19 +1769,19 @@ document.addEventListener("click", (e) => {
     const menu = el(trigger.dataset.dd);
     const open = menu.hidden;
     /* Close all other open menus first */
-    document.querySelectorAll(".dd-menu:not([hidden])").forEach((m) => { m.hidden = true; });
+    ddCloseAll();
     menu.hidden = !open;
     trigger.setAttribute("aria-expanded", String(open));
-    /* Position the fixed menu relative to the trigger button */
     if (open) {
+      ddPortalOpen(menu, trigger);
+      /* Position the fixed menu relative to the trigger button */
       const rect = trigger.getBoundingClientRect();
       const menuW = 180;
       let left = rect.right - menuW;
       let top = rect.bottom + 4;
-      /* Keep within viewport */
       if (left < 8) left = 8;
       if (left + menuW > window.innerWidth - 8) left = window.innerWidth - menuW - 8;
-      if (top + 200 > window.innerHeight) { top = rect.top - 4; menu.style.transform = 'translateY(-100%)'; }
+      if (top + 220 > window.innerHeight) { top = rect.top - 4; menu.style.transform = 'translateY(-100%)'; }
       else { menu.style.transform = 'none'; }
       menu.style.left = left + 'px';
       menu.style.top = top + 'px';
@@ -1758,8 +1791,7 @@ document.addEventListener("click", (e) => {
   }
   /* Close any open menu when clicking elsewhere */
   if (!e.target.closest(".dd-menu")) {
-    document.querySelectorAll(".dd-menu:not([hidden])").forEach((m) => { m.hidden = true; });
-    document.querySelectorAll("[aria-expanded]").forEach((b) => { b.setAttribute("aria-expanded", "false"); });
+    ddCloseAll();
   }
 
   const btn = e.target.closest("[data-act]");
@@ -2183,3 +2215,8 @@ if (logoutBtn) {
     }
   });
 }
+
+/* Close dropdowns on Escape, scroll, or resize */
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") ddCloseAll(); });
+window.addEventListener("scroll", ddCloseAll, { passive: true });
+window.addEventListener("resize", ddCloseAll, { passive: true });
