@@ -796,10 +796,16 @@
     }
 
     var header = findHeader(rows);
+    /* Even with 0 auto-detected hits, we still proceed and show the mapping UI
+       so the user can manually assign columns. */
     if (header.hits < 1) {
-      fail("Could not find matching columns. Your sheet needs headers like \"Room\", \"Tenant\", \"Rent\" for rooms, " +
-        "or \"Date\", \"Category\", \"Amount\" for expenses. Download a template below to see the format.");
-      return;
+      /* Find the first row with the most cells (likely the header) */
+      var bestRow = 0;
+      var maxCells = 0;
+      for (var hi = 0; hi < Math.min(rows.length, 20); hi++) {
+        if (rows[hi].length > maxCells) { maxCells = rows[hi].length; bestRow = hi; }
+      }
+      header = { index: bestRow, map: {}, hits: 0 };
     }
 
     current = {
@@ -812,10 +818,8 @@
     };
 
     if (!current.kind) {
-      fail("That sheet was read but does not match rooms/tenants or expenses. " +
-        "Make sure your columns include \"Room\" + \"Tenant\" for rooms, or \"Category\" + \"Amount\" for expenses.");
-      current = null;
-      return;
+      /* Default to "beds" so the user can manually map columns */
+      current.kind = "beds";
     }
 
     el("imp-step-pick").hidden = true;
@@ -878,17 +882,29 @@
     var wanted = c.kind === "beds" ? BED_FIELDS : EXPENSE_FIELDS;
     var headerCells = c.rows[c.headerIndex] || [];
 
+    /* Get sample values from first 3 data rows for each column */
+    var samples = [];
+    for (var si = 0; si < headerCells.length; si++) {
+      var vals = [];
+      for (var sj = c.headerIndex + 1; sj < Math.min(c.rows.length, c.headerIndex + 4); sj++) {
+        var v = norm(c.rows[sj][si]);
+        if (v) { vals.push(v); }
+      }
+      samples.push(vals.slice(0, 2).join(" / "));
+    }
+
     var options = function (selected) {
       var out = '<option value="">\u2014 not in the sheet \u2014</option>';
       headerCells.forEach(function (cell, i) {
         var name = norm(cell) || "Column " + (i + 1);
+        var sample = samples[i] ? " (" + samples[i].slice(0, 20) + ")" : "";
         out += '<option value="' + i + '"' + (selected === i ? " selected" : "") + ">" +
-          esc(name) + "</option>";
+          esc(name) + esc(sample) + "</option>";
       });
       return out;
     };
 
-    return "<details class=\"imp-map\"><summary>Columns we matched \u2014 change any that look wrong</summary><div class=\"imp-map-grid\">" +
+    return "<details class=\"imp-map\" open><summary>Columns we matched \u2014 change any that look wrong</summary><div class=\"imp-map-grid\">" +
       wanted.map(function (f) {
         return '<label class="imp-map-row"><span>' + esc(FIELDS[f].label) + "</span>" +
           '<select data-imp-field="' + f + '">' + options(c.map[f]) + "</select></label>";
