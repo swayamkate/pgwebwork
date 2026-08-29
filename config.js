@@ -31,8 +31,8 @@ window.PG_CONFIG = {
      2. Go to Settings → API → Copy Project URL and anon key
      3. Go to SQL Editor → paste supabase/schema.sql → Run
      4. Paste your values below */
-  SUPABASE_URL: "",
-  SUPABASE_ANON_KEY: "",
+  SUPABASE_URL: "https://lkuuwoocxchjisodegur.supabase.co",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxrdXV3b29jeGNoamlzb2RlZ3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MzU5MjMsImV4cCI6MjEwMTUxMTkyM30.dGLxbkGIOfJ6Mo3BPKIEZZ6mjVZe3m1H56oaQam95KA",
 
   /* Google Sheets — optional BACKUP only.
      Leave empty to disable. */
