@@ -87,6 +87,9 @@ body{
   text-rendering:optimizeLegibility;
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:none;
 }
 .wrap{max-width:1120px;margin:0 auto;padding:0 28px}
 
@@ -553,7 +556,7 @@ h2{font-size:16.5px;letter-spacing:-.018em;font-weight:650;line-height:1.35;marg
 /* ========== PERFORMANCE ========== */
 /* GPU-accelerate animated properties for smoother 60fps rendering. */
 .stat,.room,.bed,.card,.btn-primary,.btn-ghost,.icon-btn,.oa-card,.tab,.pill,
-.topbar,.tabs,.auth-left,.auth-right,.auth-feature{
+.auth-left,.auth-right,.auth-feature{
   will-change:transform
 }
 /* containment tells the browser this element's internals don't affect layout outside */
