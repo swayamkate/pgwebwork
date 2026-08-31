@@ -426,6 +426,25 @@ html.auth-pending body{visibility:hidden}
   </form>
 </dialog>
 
+<!-- EDIT ROOM -->
+<dialog class="dlg" id="dlg-edit-room">
+  <form class="dlg-card" id="form-edit-room">
+    <h3>Edit room</h3>
+    <input type="hidden" id="er-id" />
+    <div class="form-grid">
+      <label class="field"><span>Room number</span><input id="er-no" maxlength="12" required /></label>
+      <label class="field"><span>Floor</span><input id="er-floor" type="number" min="0" max="50" /></label>
+      <label class="field"><span>Number of beds</span><input id="er-beds" type="number" min="1" max="12" required /><small id="er-beds-hint" class="field-opt" style="display:block"></small></label>
+      <label class="field"><span>Rent per bed (₹)</span><input id="er-rent" type="number" min="0" step="100" required /></label>
+    </div>
+    <p class="auth-error" id="er-err" hidden></p>
+    <div class="dlg-foot">
+      <button class="btn-ghost" type="button" data-act="close" data-dlg="dlg-edit-room">Cancel</button>
+      <button class="btn-primary btn-sm" type="submit">Save changes</button>
+    </div>
+  </form>
+</dialog>
+
 <!-- ADD TENANT -->
 <dialog class="dlg" id="dlg-tenant">
   <form class="dlg-card" id="form-tenant">

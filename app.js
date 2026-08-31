@@ -496,6 +496,7 @@ function renderRooms() {
           <b>Room ${esc(room.no)}</b>
           <span class="room-head-right">
             <span class="muted-sm">${filled}/${room.beds.length} · ${money(room.rent)}</span>
+            <button class="x-btn" type="button" data-act="edit-room" data-room="${esc(room.id)}" title="Edit room ${esc(room.no)}" aria-label="Edit room ${esc(room.no)}">✎</button>
             <button class="x-btn" type="button" data-act="del-room" data-room="${esc(room.id)}" title="Remove room ${esc(room.no)}" aria-label="Remove room ${esc(room.no)}">×</button>
           </span>
         </div>
@@ -1822,6 +1823,8 @@ document.addEventListener("click", (e) => {
     confirmAsync({ type: 'danger', title: 'Remove room?', message: 'Remove this room? Any tenants in it are removed too.', okText: 'Remove', icon: '🗑' }).then(function (ok) {
       if (ok) { PGStore.removeRoom(roomId); commit(); }
     });
+  } else if (act === "edit-room") {
+    openEditRoomDialog(roomId);
   } else if (act === "notice") {
     PGStore.toggleNotice(roomId, Number(bedIndex));
     commit();
@@ -1961,6 +1964,105 @@ el("form-room").addEventListener("submit", (e) => {
   if (!res.ok) { showErr("r-err", res.error); return; }
   closeDlg("dlg-room");
   toast("Room added!", "success");
+  commit();
+});
+
+/* ---------- Edit Room dialog ---------- */
+let editRoomRef = null;
+
+function openEditRoomDialog(roomId) {
+  const s = PGStore.state();
+  const room = s.rooms.find(r => r.id === roomId);
+  if (!room) return;
+
+  editRoomRef = roomId;
+  el("er-id").value = roomId;
+  el("er-no").value = room.no;
+  el("er-floor").value = room.floor;
+  el("er-beds").value = room.beds.length;
+  el("er-rent").value = room.rent;
+  el("er-err").hidden = true;
+
+  const filled = room.beds.filter(Boolean).length;
+  const hint = el("er-beds-hint");
+  hint.textContent = `${filled} occupied · ${room.beds.length - filled} vacant`;
+  hint.style.display = filled > 0 ? 'block' : 'none';
+
+  /* Show warning if trying to reduce beds below occupied count */
+  el("er-beds").addEventListener("input", function () {
+    const newCount = Number(this.value) || 0;
+    const h = el("er-beds-hint");
+    if (newCount < filled) {
+      h.textContent = `⚠ Can't go below ${filled} (occupied beds)`;
+      h.style.color = 'var(--red)';
+    } else {
+      h.textContent = `${filled} occupied · ${newCount - filled} vacant`;
+      h.style.color = '';
+    }
+  });
+
+  openDlg("dlg-edit-room");
+}
+
+window.openEditRoomDialog = openEditRoomDialog;
+
+el("form-edit-room").addEventListener("submit", (e) => {
+  e.preventDefault();
+  if (!editRoomRef) return;
+
+  const roomId = editRoomRef;
+  const s = PGStore.state();
+  const room = s.rooms.find(r => r.id === roomId);
+  if (!room) return;
+
+  const newNo = el("er-no").value.trim();
+  const newFloor = el("er-floor").value;
+  const newRent = el("er-rent").value;
+  const newBedCount = Number(el("er-beds").value) || room.beds.length;
+  const filled = room.beds.filter(Boolean).length;
+
+  /* Validate bed count */
+  if (newBedCount < filled) {
+    showErr("er-err", `Can't reduce to ${newBedCount} beds — ${filled} are occupied.`);
+    return;
+  }
+  if (newBedCount < 1) {
+    showErr("er-err", "A room needs at least 1 bed.");
+    return;
+  }
+  if (newBedCount > 12) {
+    showErr("er-err", "Maximum 12 beds per room.");
+    return;
+  }
+
+  /* Adjust bed count BEFORE updating room (updateRoom calls save()) */
+  const oldBedCount = room.beds.length;
+  if (newBedCount > room.beds.length) {
+    for (let i = room.beds.length; i < newBedCount; i++) {
+      room.beds.push(null);
+    }
+  } else if (newBedCount < room.beds.length) {
+    room.beds.length = newBedCount;
+  }
+
+  /* Update room properties (rent, number, floor) */
+  const res = PGStore.updateRoom(roomId, {
+    no: newNo,
+    floor: PGStore.settings().floors === false ? 0 : newFloor,
+    rent: newRent
+  });
+  if (!res.ok) { showErr("er-err", res.error); return; }
+
+  if (newBedCount > oldBedCount) {
+    toast(`Room ${newNo} — now has ${newBedCount} beds`, "success");
+  } else if (newBedCount < oldBedCount) {
+    toast(`Room ${newNo} — reduced to ${newBedCount} beds`, "success");
+  } else {
+    toast(`Room ${newNo} updated`, "success");
+  }
+
+  closeDlg("dlg-edit-room");
+  editRoomRef = null;
   commit();
 });
 
