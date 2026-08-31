@@ -772,8 +772,8 @@ html{
     box-shadow:0 8px 32px rgba(0,0,0,.2);
   }
 
-  /* ---- FOOTER: hidden ---- */
-  .foot{display:none}
+  /* ---- FOOTER: fixed below tab bar ---- */
+  .foot{bottom:calc(56px + env(safe-area-inset-bottom, 0px))}
 
   /* ---- LARGE TOUCH TARGETS ---- */
   .oa-card,.link-btn,.dd-item,.comp-card .link-btn{
