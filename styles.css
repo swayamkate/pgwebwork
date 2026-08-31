@@ -1,5 +1,7 @@
 /* PG Manager — theme
-   Light + dark palettes driven by [data-theme] on <html>. */
+   Two distinct design systems:
+   - Desktop (≥641px): Dashboard with sidebar, multi-column grids, data tables
+   - Mobile (≤640px): App-like with bottom nav, fullscreen cards, touch gestures */
 
 :root,
 [data-theme="light"]{
@@ -26,13 +28,10 @@
   --red:#DC4444;
   --red-soft:#FCEAEA;
 
-  /* Layered rather than single-drop: a tight contact shadow plus a wide soft
-     one reads as depth instead of as a grey smudge. */
   --shadow-sm:0 1px 2px rgba(16,18,25,.04), 0 1px 1px rgba(16,18,25,.03);
   --shadow-md:0 1px 2px rgba(16,18,25,.04), 0 4px 12px -4px rgba(16,18,25,.08), 0 14px 32px -14px rgba(16,18,25,.10);
   --shadow-lg:0 1px 2px rgba(16,18,25,.05), 0 8px 24px -8px rgba(16,18,25,.12), 0 32px 64px -24px rgba(16,18,25,.20);
   --ring:rgba(37,99,235,.20);
-  /* Top-edge highlight that lifts a surface off the background. */
   --hairline:inset 0 1px 0 rgba(255,255,255,.7);
 }
 
@@ -68,7 +67,6 @@
 }
 
 *{box-sizing:border-box}
-/* Fallback ring for anything without its own focus rule. */
 :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 ::selection{background:color-mix(in srgb, var(--brand) 26%, transparent)}
 html,body{margin:0;padding:0}
@@ -87,11 +85,13 @@ body{
   text-rendering:optimizeLegibility;
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  overscroll-behavior-y:none;
 }
 .wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+
+/* ================================================================
+   DESKTOP DESIGN (≥641px)
+   Dashboard feel: topbar, sticky tabs, multi-column grids, tables
+   ================================================================ */
 
 /* ---------- top bar ---------- */
 .topbar{
@@ -122,7 +122,7 @@ body{
   box-shadow:inset 0 1px 0 rgba(255,255,255,.2);
 }
 
-/* ---------- tabs ---------- */
+/* ---------- tabs (desktop: sticky horizontal) ---------- */
 .tabs{position:sticky;top:66px;z-index:29;background:var(--bg);padding:16px 0 4px}
 .tabs-in{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content;max-width:100%}
 .tabs-in::-webkit-scrollbar{display:none}
@@ -143,7 +143,6 @@ main{padding:36px 28px 120px}
 
 .page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:30px}
 h1{font-size:32px;line-height:1.14;letter-spacing:-.032em;font-weight:700;margin:0}
-/* Capped measure so the subtitle never runs the full 1120px. */
 .sub{color:var(--muted);margin:8px 0 0;font-size:14.5px;line-height:1.5;max-width:62ch}
 .stamp{
   color:var(--muted);font-size:12.5px;font-weight:500;background:var(--surface);
@@ -166,7 +165,6 @@ h2{font-size:16.5px;letter-spacing:-.018em;font-weight:650;line-height:1.35;marg
   border-radius:18px;padding:22px;box-shadow:var(--shadow-md), var(--hairline);
   transition:transform .2s cubic-bezier(.2,.8,.3,1), box-shadow .2s ease, border-color .2s ease;
 }
-/* Brand wash from the top-right corner, revealed on hover only. */
 .stat::after{
   content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
   background:radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--brand) 8%, transparent) 0%, transparent 60%);
@@ -318,7 +316,7 @@ h2{font-size:16.5px;letter-spacing:-.018em;font-weight:650;line-height:1.35;marg
 .btn-primary:disabled{opacity:.6;cursor:default;filter:none;transform:none}
 .btn-primary:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 
-/* ---------- footer ---------- */
+/* ---------- footer (desktop only) ---------- */
 .foot{border-top:1px solid var(--border);background:var(--surface);padding:14px 0;position:fixed;bottom:0;left:0;right:0;z-index:20;backdrop-filter:saturate(180%) blur(12px);-webkit-backdrop-filter:saturate(180%) blur(12px);background:color-mix(in srgb, var(--surface) 85%, transparent)}
 .foot-in{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
 
@@ -328,8 +326,6 @@ h2{font-size:16.5px;letter-spacing:-.018em;font-weight:650;line-height:1.35;marg
   min-height:100vh;display:flex;flex-direction:row;align-items:stretch;
   position:relative;
 }
-
-/* Left panel — branding + features */
 .auth-left{
   flex:1 1 0%;display:flex;flex-direction:column;justify-content:center;
   padding:60px 56px;position:relative;overflow:hidden;
@@ -377,7 +373,6 @@ h2{font-size:16.5px;letter-spacing:-.018em;font-weight:650;line-height:1.35;marg
 .auth-feature-text b{display:block;color:#F5F5F5;font-size:13.5px;font-weight:600;margin-bottom:2px}
 .auth-feature-text span{color:#737373;font-size:12.5px;line-height:1.45}
 
-/* Grid pattern overlay */
 .auth-grid{
   position:absolute;inset:0;z-index:1;
   background-image:
@@ -389,7 +384,6 @@ h2{font-size:16.5px;letter-spacing:-.018em;font-weight:650;line-height:1.35;marg
   pointer-events:none;
 }
 
-/* Right panel — form */
 .auth-right{
   width:460px;min-height:100vh;display:flex;flex-direction:column;
   align-items:center;justify-content:center;padding:48px 44px;
@@ -465,74 +459,29 @@ h2{font-size:16.5px;letter-spacing:-.018em;font-weight:650;line-height:1.35;marg
   .auth-card{max-width:100%}
 }
 
-/* ---------- responsive ---------- */
+/* ---------- desktop responsive ---------- */
 @media (max-width:900px){
   .stats{grid-template-columns:repeat(2,1fr)}
   .cols{grid-template-columns:1fr}
   .rooms{grid-template-columns:repeat(2,1fr)}
 }
-@media (max-width:640px){
-  .wrap{padding:0 16px}
-  main{padding:22px 16px 120px}
-  h1{font-size:26px}
-  /* --- Topbar compact on phone --- */
-  .topbar-in{height:56px;gap:8px}
-  .brand{gap:8px}
-  .brand-mark{width:32px;height:32px;border-radius:9px}
-  .brand-text strong{font-size:14px}
-  .brand-text small{display:none}
-  .topbar-right{gap:6px}
-  /* Property name button → compact text on mobile */
-  [data-act="name-property"]{font-size:12px;padding:6px 10px;min-height:34px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .avatar{width:30px;height:30px;font-size:11px}
-  .icon-btn{width:36px;height:36px}
-  /* --- Tabs moved to bottom in manage.css mobile overhaul --- */
-  .tabs{top:auto;padding:0}
-  /* --- Stats --- */
-  .stats,.stats-3{grid-template-columns:repeat(2,1fr);gap:10px}
-  .stat{padding:14px;border-radius:12px}
-  .stat-value{font-size:22px}
-  .stat-label{font-size:11.5px}
-  /* --- Cards --- */
-  .card{padding:18px;border-radius:14px}
-  .card-head{margin-bottom:16px}
-  .card-head h2{font-size:15px}
-  /* --- Rooms --- */
-  .rooms{grid-template-columns:1fr}
-  /* --- Page heads --- */
-  .page-head{flex-direction:column;gap:10px}
-  .page-head .head-actions{flex-wrap:wrap;gap:6px}
-  /* --- Table hidden, cards shown --- */
-  .table-card{display:none}
-  .tenant-cards{display:flex}
-  /* --- Pills --- */
-  .pill-live{display:none}
-  /* --- Buttons --- */
-  .btn-ghost{padding:8px 12px}
-  /* --- Dropdowns --- */
-  .dd-menu{right:-10px;min-width:180px}
-  /* --- Footer --- */
-  .foot-in{justify-content:center;text-align:center;font-size:11.5px}
-  /* --- Dialogs: fullscreen handled in manage.css --- */
-  .dlg-card{padding:20px;border-radius:16px}
-  .dlg-foot{flex-direction:column;gap:8px}
-  .dlg-foot .btn-primary{order:-1}
-  /* --- Auth --- */
-  .auth{padding:24px 16px}
-  .auth-card{padding:28px 22px}
-  .auth-top{top:16px;right:16px}
-  /* --- Backup bar --- */
-  .backup{flex-direction:column;gap:8px;text-align:center}
+
+/* ---------- performance ---------- */
+html{
+  -webkit-overflow-scrolling:touch;
+  scroll-behavior:smooth
 }
+.table-scroll,.tabs-in{
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain
+}
+.stat,.room,.bed{transition:transform .25s cubic-bezier(.2,.8,.3,1),box-shadow .25s ease,border-color .25s ease}
 
 @media (prefers-reduced-motion:reduce){
   *{transition:none!important;animation:none!important}
 }
 
 /* ---------- auth: password field, strength meter, notices ---------- */
-
-/* .field sets display:flex, which beats the browser's own [hidden] rule, so a
-   hidden field keeps its slot unless it is told to go. */
 .field[hidden]{display:none}
 
 .pw-wrap{position:relative;display:block}
@@ -550,97 +499,296 @@ h2{font-size:16.5px;letter-spacing:-.018em;font-weight:650;line-height:1.35;marg
 .pw-meter[data-score="3"] .pw-bar i,.pw-meter[data-score="4"] .pw-bar i{background:var(--green)}
 
 .code-input{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase}
-
 .auth-note{margin:0 0 16px;padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.5;background:var(--amber-soft);color:var(--amber)}
 
-/* ========== PERFORMANCE ========== */
-/* GPU-accelerate animated properties for smoother 60fps rendering. */
-/* No will-change or contain on scrollable ancestors — breaks iOS scroll */
-/* Smooth scrolling with momentum on iOS */
-html{
-  -webkit-overflow-scrolling:touch;
-  scroll-behavior:smooth
-}
-.table-scroll,.tabs-in{
-  -webkit-overflow-scrolling:touch;
-  overscroll-behavior-x:contain
-}
-/* Reduce paint area for expensive elements */
-/* Removed contain from stat/room — was breaking iOS scroll */
-/* Debounce transition on hover to prevent jank on rapid mouse movement */
-.stat,.room,.bed{transition:transform .25s cubic-bezier(.2,.8,.3,1),box-shadow .25s ease,border-color .25s ease}
-
-/* ========== RESPONSIVE — MOBILE ========== */
-@media (max-width:640px){
-  /* Larger touch targets */
-  .btn-ghost,.icon-btn,.link-btn,.tab,.pill,.oa-card,.dd-item{
-    min-height:44px
-  }
-  .icon-btn{width:44px;height:44px}
-  .tab{padding:10px 14px;font-size:13.5px}
-  /* Smooth tab transitions */
-  .tabs-in{transition:transform .2s ease}
-  /* Better card spacing on small screens */
-  .card{padding:18px;border-radius:14px}
-  .stat{padding:14px;border-radius:14px}
-  .stat-value{font-size:22px}
-  /* Stack stats on very small screens */
-  @media (max-width:380px){
-    .stats{grid-template-columns:1fr 1fr;gap:8px}
-    .stat{padding:12px}
-    .stat-value{font-size:20px}
-    .stat-label{font-size:11px}
-  }
-  /* Better mobile dialog sizing */
-  .dlg-card{padding:20px;border-radius:18px;max-height:90vh;overflow-y:auto}
-  /* Let the browser handle scroll naturally on mobile */
-  /* Smooth page transitions */
-  .view.is-active{animation:rise .2s ease both}
-  /* Better dropdown positioning on mobile */
-  .dd-menu{max-height:60vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
-}
-
-@media (max-width:900px){
-  .cols{gap:14px}
-  .rooms{gap:14px}
-  .stats{gap:14px}
-}
-
-/* ========== TOAST NOTIFICATIONS ========== */
-.toast{
-  pointer-events:auto;display:flex;align-items:center;gap:10px;
-  padding:12px 16px;border-radius:12px;font-size:13.5px;font-weight:550;
-  box-shadow:0 8px 24px -8px rgba(0,0,0,.25),0 2px 8px -2px rgba(0,0,0,.15);
-  animation:toast-in .3s cubic-bezier(.2,.8,.3,1) both;
-  max-width:360px;word-break:break-word;
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-}
-.toast.removing{animation:toast-out .25s ease both}
-@keyframes toast-in{from{opacity:0;transform:translateX(40px) scale(.95)}to{opacity:1;transform:none}}
-@keyframes toast-out{to{opacity:0;transform:translateX(40px) scale(.95)}}
-.toast-success{background:var(--green-soft);color:var(--green);border:1px solid color-mix(in srgb,var(--green) 20%,transparent)}
-.toast-error{background:var(--red-soft);color:var(--red);border:1px solid color-mix(in srgb,var(--red) 20%,transparent)}
-.toast-info{background:var(--brand-soft);color:var(--brand);border:1px solid color-mix(in srgb,var(--brand) 20%,transparent)}
-.toast-warn{background:var(--amber-soft);color:var(--amber);border:1px solid color-mix(in srgb,var(--amber) 20%,transparent)}
-.toast-icon{font-size:18px;flex-shrink:0;line-height:1}
-.toast-body{flex:1;min-width:0}
-.toast-close{
-  appearance:none;background:none;border:0;color:inherit;cursor:pointer;
-  padding:4px;border-radius:6px;opacity:.6;transition:opacity .15s ease;
-  flex-shrink:0;font-size:16px;line-height:1
-}
-.toast-close:hover{opacity:1}
-
-/* ========== CUSTOM CONFIRM ========== */
-#dlg-confirm .dlg-card{max-width:380px}
-#confirm-icon.confirm-warn{background:var(--amber-soft);color:var(--amber)}
-#confirm-icon.confirm-danger{background:var(--red-soft);color:var(--red)}
-#confirm-icon.confirm-info{background:var(--brand-soft);color:var(--brand)}
-#confirm-icon.confirm-success{background:var(--green-soft);color:var(--green)}
-#confirm-ok.btn-danger{background:var(--red);box-shadow:0 2px 8px -2px rgba(220,68,68,.4)}
-#confirm-ok.btn-danger:hover{filter:brightness(1.1)}
+/* ================================================================
+   MOBILE DESIGN (≤640px)
+   App-like: bottom nav, fullscreen sheets, dense cards, touch-first
+   ================================================================ */
 
 @media (max-width:640px){
-  #toast-container{right:12px;left:12px;max-width:100%}
-  .toast{max-width:100%}
+  /* ---- RESET: clean slate for mobile ---- */
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    font-size:14px;
+    -webkit-tap-highlight-color:transparent;
+    overscroll-behavior-y:none;
+  }
+
+  /* ---- TOPBAR: minimal status bar ---- */
+  .topbar{
+    position:fixed;top:0;left:0;right:0;z-index:100;
+    background:color-mix(in srgb, var(--surface) 95%, transparent);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-bottom:none;
+    height:56px;
+  }
+  .topbar-in{height:56px;padding:0 12px;gap:8px}
+  .brand{gap:8px}
+  .brand-mark{width:32px;height:32px;border-radius:10px}
+  .brand-text strong{font-size:15px;font-weight:700;letter-spacing:-.02em}
+  .brand-text small{display:none}
+  .topbar-right{gap:6px}
+  .topbar-right .btn-ghost{display:none}
+  .avatar{width:32px;height:32px;font-size:12px}
+  .icon-btn{width:40px;height:40px;border-radius:12px}
+
+  /* ---- BOTTOM NAV: app-style tab bar ---- */
+  .tabs{
+    position:fixed;bottom:0;left:0;right:0;top:auto;
+    z-index:100;padding:0;
+    background:color-mix(in srgb, var(--surface) 95%, transparent);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-top:1px solid var(--border);
+    /* iOS safe area */
+    padding-bottom:env(safe-area-inset-bottom, 0px);
+  }
+  .tabs-in{
+    display:flex;width:100%;gap:0;padding:0;
+    background:none;border:none;border-radius:0;
+    overflow-x:auto;scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  }
+  .tabs-in::-webkit-scrollbar{display:none}
+  .tab{
+    flex:1 1 0;min-width:0;padding:6px 0 8px;
+    min-height:56px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:3px;
+    border-radius:0;font-size:10px;font-weight:600;
+    color:var(--faint);scroll-snap-align:center;
+    transition:color .15s ease;
+    -webkit-tap-highlight-color:transparent;
+    position:relative;
+  }
+  .tab::before{
+    content:"";display:block;width:22px;height:22px;
+    margin-bottom:1px;opacity:.45;transition:opacity .15s ease;
+    font-size:20px;line-height:1;text-align:center;
+  }
+  .tab:hover{color:var(--muted)}
+  .tab.is-active{color:var(--brand);background:none}
+  .tab.is-active::before{opacity:1}
+  .tab.is-active::after{
+    content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);
+    width:24px;height:2px;border-radius:0 0 2px 2px;background:var(--brand);
+  }
+
+  /* Tab icons */
+  [data-view="dashboard"]::before{content:"📊"}
+  [data-view="beds"]::before{content:"🛏️"}
+  [data-view="tenants"]::before{content:"👤"}
+  [data-view="rent"]::before{content:"💰"}
+  [data-view="expenses"]::before{content:"📋"}
+  [data-view="complaints"]::before{content:"🔧"}
+  [data-view="owner"]::before{content:"⚙️"}
+
+  /* ---- MAIN CONTENT ---- */
+  .wrap{padding:0 16px}
+  main{
+    padding:68px 16px calc(72px + env(safe-area-inset-bottom, 0px));
+    min-height:100dvh;
+  }
+
+  /* ---- PAGE HEADERS ---- */
+  .page-head{
+    flex-direction:column;gap:12px;
+    margin-bottom:20px;
+    padding-top:4px;
+  }
+  h1{font-size:24px;letter-spacing:-.03em;font-weight:700}
+  .sub{font-size:13px;line-height:1.4}
+  .stamp{font-size:11px;padding:5px 10px}
+
+  /* ---- STATS: compact 2-col ---- */
+  .stats{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .stats-3{grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .stat{
+    padding:14px;border-radius:16px;
+    background:var(--surface);border:1px solid var(--border);
+    box-shadow:var(--shadow-sm);
+  }
+  .stat::after{display:none}
+  .stat:hover{transform:none;box-shadow:var(--shadow-sm)}
+  .stat-top{margin-bottom:10px}
+  .stat-label{font-size:11px;font-weight:600;letter-spacing:.02em}
+  .stat-ico{width:28px;height:28px;border-radius:8px}
+  .stat-value{font-size:22px;letter-spacing:-.03em}
+  .stat-note{font-size:11px;margin-top:6px}
+
+  /* ---- CARDS: mobile sheets ---- */
+  .card{
+    padding:18px;border-radius:16px;margin-bottom:12px;
+    background:var(--surface);border:1px solid var(--border);
+    box-shadow:var(--shadow-sm);
+  }
+  .card-head{margin-bottom:14px}
+  .card-head h2{font-size:15px;font-weight:660}
+
+  /* ---- TWO-COL: stack ---- */
+  .cols{grid-template-columns:1fr;gap:12px}
+
+  /* ---- ROOMS: single column, tappable ---- */
+  .rooms{grid-template-columns:1fr;gap:10px}
+  .room{
+    padding:16px;border-radius:16px;
+    background:var(--surface);border:1px solid var(--border);
+    box-shadow:var(--shadow-sm);
+  }
+  .room:hover{transform:none;box-shadow:var(--shadow-sm)}
+  .room-head{margin-bottom:12px}
+  .room-head b{font-size:14px;font-weight:660}
+  .room-beds{gap:8px}
+  .bed{padding:10px 12px;border-radius:10px;flex:1 1 calc(50% - 8px)}
+  .bed b{font-size:10px}
+  .bed span{font-size:12.5px}
+
+  /* ---- FEED ---- */
+  .feed li{padding:12px 0;gap:10px}
+  .feed-body{font-size:13px}
+  .feed-body span{font-size:12px}
+  .ico{width:28px;height:28px;border-radius:9px;font-size:12px}
+
+  /* ---- PAY LIST ---- */
+  .paylist li{padding:14px 0}
+  .pay-name{font-size:13px}
+  .amount{font-size:13px}
+  .stats-3 .stat{padding:12px}
+  .stats-3 .stat-value{font-size:18px}
+
+  /* ---- TENANT CARDS ---- */
+  .tenant-cards{display:flex;gap:10px}
+  .table-card{display:none}
+  .tcard{
+    padding:16px;border-radius:16px;
+    background:var(--surface);border:1px solid var(--border);
+    box-shadow:var(--shadow-sm);
+  }
+  .tcard-top{margin-bottom:12px}
+  .tcard-grid{gap:12px;font-size:13px}
+  .tcard-grid b{font-size:10px}
+
+  /* ---- COMPLAINTS ---- */
+  .complaints-toolbar{flex-direction:column;align-items:stretch;gap:8px}
+  .pills-group{overflow-x:auto;scrollbar-width:none}
+  .pills-group::-webkit-scrollbar{display:none}
+  .comp-card{padding:16px;border-radius:14px}
+  .comp-title{font-size:14px}
+  .comp-meta{font-size:12px}
+
+  /* ---- OWNER TAB ---- */
+  .oa-grid{grid-template-columns:1fr;gap:10px}
+  .oa-card{
+    padding:16px;border-radius:14px;gap:12px;
+    background:var(--surface);border:1px solid var(--border);
+    box-shadow:var(--shadow-sm);
+  }
+  .oa-icon{width:36px;height:36px;border-radius:10px;font-size:16px}
+  .oa-text b{font-size:14px}
+  .oa-text span{font-size:12px}
+  .data-stat-card{padding:16px;border-radius:14px}
+  .data-stat-row{font-size:13px}
+
+  /* ---- BUTTONS: touch targets ---- */
+  .btn-ghost{
+    min-height:48px;padding:10px 16px;font-size:14px;
+    border-radius:12px;
+  }
+  .btn-primary{
+    min-height:52px;font-size:15px;border-radius:14px;
+  }
+  .icon-btn{width:44px;height:44px;border-radius:12px}
+
+  /* ---- DIALOGS: fullscreen sheets ---- */
+  .dlg{
+    max-width:100vw;width:100%;margin:0;
+    padding:0;border-radius:0;
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    z-index:200;
+  }
+  .dlg::backdrop{
+    background:rgba(0,0,0,.6);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)
+  }
+  .dlg-card{
+    border-radius:0;border:none;
+    padding:20px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+    max-height:100vh;max-height:100dvh;
+    overflow-y:auto;-webkit-overflow-scrolling:touch;
+    box-shadow:none;
+    background:var(--surface);
+  }
+  .dlg-card h3{font-size:18px;font-weight:700;margin-bottom:18px}
+  .dlg .field{margin-bottom:16px}
+  .dlg .field span{font-size:12px}
+  .dlg .field input,.dlg .field select,.dlg .field textarea{
+    font-size:16px;min-height:50px;padding:13px 15px;border-radius:12px
+  }
+  .dlg-foot{
+    position:sticky;bottom:0;left:0;right:0;
+    padding:14px 0 0;
+    background:var(--surface);
+    display:flex;gap:10px;
+    border-top:1px solid var(--border);
+  }
+  .dlg-foot .btn-ghost,.dlg-foot .btn-primary{flex:1;min-height:50px}
+  .form-grid{gap:0 12px}
+
+  .dlg-wide .dlg-card{
+    max-height:100vh;max-height:100dvh;
+    padding:16px 12px calc(16px + env(safe-area-inset-bottom, 0px))
+  }
+  .dlg-wide{max-width:100vw}
+
+  /* ---- DROPDOWN MENUS ---- */
+  .dd-menu{
+    right:-10px;min-width:200px;
+    max-height:60vh;overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    border-radius:14px;
+    box-shadow:0 12px 40px rgba(0,0,0,.3);
+  }
+  .dd-item{padding:12px 16px;font-size:14px;min-height:44px}
+
+  /* ---- SETUP CARD ---- */
+  .setup{flex-direction:column;gap:12px;padding:16px}
+  .setup-actions{width:100%}
+  .setup-actions .btn-ghost,.setup-actions .btn-primary{width:100%}
+
+  /* ---- LEGEND ---- */
+  .legend{gap:14px;margin-bottom:14px}
+
+  /* ---- TOAST: bottom sheet ---- */
+  #toast-container{
+    bottom:calc(72px + env(safe-area-inset-bottom, 0px));
+    top:auto;left:12px;right:12px;
+    max-width:100%;align-items:stretch
+  }
+  .toast{
+    max-width:100%;border-radius:14px;
+    padding:12px 16px;font-size:13px;
+    box-shadow:0 8px 32px rgba(0,0,0,.2);
+  }
+
+  /* ---- FOOTER: hidden ---- */
+  .foot{display:none}
+
+  /* ---- LARGE TOUCH TARGETS ---- */
+  .oa-card,.link-btn,.dd-item,.comp-card .link-btn{
+    min-height:48px;display:flex;align-items:center
+  }
+}
+
+/* ---- Very small screens ---- */
+@media (max-width:380px){
+  .tab{font-size:9px;padding:4px 0 6px;min-height:50px}
+  .tab::before{width:20px;height:20px}
+  .stat-value{font-size:18px}
+  .stats-3{grid-template-columns:1fr 1fr}
+  .oa-card{padding:12px 14px}
+  .oa-icon{width:32px;height:32px}
+  .oa-text b{font-size:13px}
+  .oa-text span{font-size:11px}
 }

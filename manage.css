@@ -621,221 +621,30 @@ button.bed-add:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 }
 
 /* ============================================================
-   PREMIUM MOBILE OVERHAUL
+   MOBILE: global overrides handled in styles.css
+   Component-specific mobile overrides below
    ============================================================ */
 
 @media (max-width:640px){
-
-  /* ---- TOPBAR: ultra-compact ---- */
-  .topbar{border-bottom:0}
-  .topbar-in{height:52px;gap:6px;padding:0 4px}
-  .brand{gap:6px}
-  .brand-mark{width:28px;height:28px;border-radius:8px}
-  .brand-text strong{font-size:13px;font-weight:660}
-  .brand-text small{display:none}
-  .topbar-right{gap:4px}
-  .topbar-right .btn-ghost,.topbar-right [data-act]{display:none}
-  .avatar{width:28px;height:28px;font-size:10px}
-  .icon-btn{width:36px;height:36px;border-radius:9px}
-
-  /* ---- TABS: fixed bottom bar ---- */
-  .tabs{
-    position:fixed;bottom:0;left:0;right:0;top:auto;
-    z-index:100;padding:0;
-    background:color-mix(in srgb, var(--surface) 92%, transparent);
-    backdrop-filter:saturate(180%) blur(20px);
-    -webkit-backdrop-filter:saturate(180%) blur(20px);
-    border-top:1px solid var(--border);
-  }
-  .tabs-in{
-    display:flex;width:100%;gap:0;padding:0;
-    background:none;border:none;border-radius:0;
-    overflow-x:auto;scroll-snap-type:x mandatory;
-    -webkit-overflow-scrolling:touch;scrollbar-width:none;
-    justify-content:space-around;
-  }
-  .tabs-in::-webkit-scrollbar{display:none}
-  .tab{
-    flex:1 1 0;min-width:0;padding:8px 2px 10px;
-    min-height:52px;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;gap:2px;
-    border-radius:0;font-size:10px;font-weight:600;
-    color:var(--faint);scroll-snap-align:center;
-    transition:color .15s ease;
-    -webkit-tap-highlight-color:transparent;
-  }
-  .tab::before{
-    content:"";display:block;width:20px;height:20px;
-    margin-bottom:1px;opacity:.5;transition:opacity .15s ease;
-  }
-  .tab:hover{color:var(--muted)}
-  .tab:hover::before{opacity:.65}
-  .tab.is-active{color:var(--brand);background:none}
-  .tab.is-active::before{opacity:1}
-  /* Tab icons using CSS */
-  [data-view="dashboard"]::before{content:"📊"}
-  [data-view="beds"]::before{content:"🛏️"}
-  [data-view="tenants"]::before{content:"👤"}
-  [data-view="rent"]::before{content:"💰"}
-  [data-view="expenses"]::before{content:"📋"}
-  [data-view="complaints"]::before{content:"🔧"}
-  [data-view="owner"]::before{content:"⚙️"}
-
-  /* ---- MAIN: space for bottom tabs + safe area ---- */
-  main{padding:16px 14px 100px}
-  .wrap{padding:0 14px}
-
-  /* ---- PAGE HEADS: stacked ---- */
-  .page-head{flex-direction:column;gap:10px;margin-bottom:20px}
-  .page-head .head-actions{width:100%}
-  .page-head .head-actions .btn-ghost,.page-head .head-actions .btn-primary{
-    flex:1 1 0;justify-content:center;text-align:center
-  }
-
-  /* ---- STATS: 2-column compact ---- */
-  .stats{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
-  .stats-3{grid-template-columns:1fr 1fr 1fr;gap:6px}
-  .stat{padding:12px;border-radius:14px}
-  .stat-value{font-size:20px;letter-spacing:-.03em}
-  .stat-label{font-size:10.5px;font-weight:600;letter-spacing:.01em}
-  .stat-note{font-size:11px;margin-top:5px}
-  .stat-ico{width:26px;height:26px;border-radius:8px}
-  .stat-ico svg{width:14px;height:14px}
-
-  /* ---- CARDS: tighter ---- */
-  .card{padding:16px;border-radius:14px;margin-bottom:12px}
-  .card-head{margin-bottom:14px}
-  .card-head h2{font-size:14px;font-weight:660}
-  h1{font-size:22px;letter-spacing:-.03em}
-  .sub{font-size:13px;line-height:1.45}
-
-  /* ---- TWO-COL LAYOUTS: stack ---- */
-  .cols{grid-template-columns:1fr;gap:12px}
-  .cols .card{margin-bottom:0}
-
-  /* ---- ROOMS: single column ---- */
-  .rooms{grid-template-columns:1fr;gap:10px}
-  .room{padding:14px;border-radius:12px}
-  .room-head{margin-bottom:10px}
-  .room-head b{font-size:13px}
-  .room-beds{gap:6px}
-  .bed{padding:9px 10px;border-radius:9px}
-  .bed b{font-size:9.5px}
-  .bed span{font-size:12px}
-
-  /* ---- FEED ---- */
-  .feed li{padding:10px 0;gap:10px}
-  .feed-body{font-size:12.5px}
-  .feed-body span{font-size:11.5px}
-  .ico{width:26px;height:26px;border-radius:8px}
-
-  /* ---- PAY LIST (Rent & Expenses) ---- */
-  .paylist li{padding:12px 0}
-  .pay-name{font-size:13px}
-  .amount{font-size:13px}
-  .stats-3 .stat{padding:10px}
-  .stats-3 .stat-value{font-size:17px}
-
-  /* ---- TENANT CARDS: improved ---- */
-  .tenant-cards{gap:8px}
-  .tcard{padding:14px;border-radius:12px}
-  .tcard-top{margin-bottom:10px}
-  .tcard-grid{gap:10px;font-size:12.5px}
-  .tcard-grid b{font-size:10px}
-
-  /* ---- COMPLAINT CARDS ---- */
-  .complaints-toolbar{flex-direction:column;align-items:stretch;gap:8px}
-  .pills-group{overflow-x:auto;scrollbar-width:none}
-  .pills-group::-webkit-scrollbar{display:none}
-  .comp-card{padding:14px;border-radius:12px}
-  .comp-title{font-size:13.5px}
-  .comp-meta{font-size:11.5px}
-
-  /* ---- OWNER TAB: organized sections ---- */
-  .oa-grid{gap:8px}
-  .oa-card{padding:12px 14px;border-radius:12px;gap:10px}
-  .oa-icon{width:34px;height:34px;border-radius:9px;font-size:15px}
-  .oa-text b{font-size:13px}
-  .oa-text span{font-size:11.5px}
-  .data-stat-card{padding:14px;border-radius:12px}
-  .data-stat-row{font-size:12.5px}
-
-  /* ---- DIALOGS: fullscreen on mobile ---- */
-  .dlg{
-    max-width:100vw;width:100%;margin:0;
-    padding:0;border-radius:0;
-    position:fixed;top:0;left:0;right:0;bottom:0;
-    z-index:200;
-  }
-  .dlg::backdrop{
-    background:rgba(0,0,0,.6);
-    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)
-  }
-  .dlg-card{
-    border-radius:0;border:none;
-    padding:20px 16px calc(20px + env(safe-area-inset-bottom, 0px));
-    max-height:100vh;max-height:100dvh;
-    overflow-y:auto;-webkit-overflow-scrolling:touch;
-    box-shadow:none;
-  }
-  .dlg-card h3{font-size:17px;margin-bottom:16px}
-  .dlg .field{margin-bottom:14px}
-  .dlg .field span{font-size:12px}
-  .dlg .field input,.dlg .field select,.dlg .field textarea{
-    font-size:16px;min-height:48px;padding:12px 14px;border-radius:11px
-  }
-  .dlg-foot{
-    position:sticky;bottom:0;left:0;right:0;
-    padding:12px 0 0;
-    background:var(--surface);
-    display:flex;gap:8px
-  }
-  .dlg-foot .btn-ghost,.dlg-foot .btn-primary{flex:1;min-height:48px}
-  .form-grid{gap:0 10px}
-
-  /* Wide dialogs (import, etc) */
-  .dlg-wide .dlg-card{
-    max-height:100vh;max-height:100dvh;
-    padding:16px 12px calc(16px + env(safe-area-inset-bottom, 0px))
-  }
-  .dlg-wide{max-width:100vw}
-
-  /* ---- SETUP CARD ---- */
-  .setup{flex-direction:column;gap:12px;padding:14px}
-  .setup-actions{width:100%}
-  .setup-actions .btn-ghost,.setup-actions .btn-primary{width:100%}
-
-  /* ---- LEGEND ---- */
-  .legend{gap:12px;margin-bottom:12px}
-
-  /* ---- STAMP ---- */
-  .stamp{font-size:11px;padding:5px 10px}
-
-  /* ---- TOAST: bottom sheet style ---- */
-  #toast-container{
-    bottom:70px;top:auto;left:8px;right:8px;
-    max-width:100%;align-items:stretch
-  }
-  .toast{
-    max-width:100%;border-radius:12px;
-    padding:11px 14px;font-size:13px
-  }
-
-  /* ---- FOOTER: hidden (tabs replace it) ---- */
-  .foot{display:none}
-
-  /* ---- SAFE AREA for notch phones ---- */
-  @supports (padding:env(safe-area-inset-bottom)){
-    .tabs{padding-bottom:env(safe-area-inset-bottom)}
-    main{padding-bottom:calc(80px + env(safe-area-inset-bottom))}
-  }
+  .oa-grid{grid-template-columns:1fr !important}
+  .oa-card{padding:14px 16px !important}
+  .data-stat-card{padding:16px !important}
+  .data-btn-col{gap:8px}
+  .comp-card{padding:14px !important}
+  .rules-item{padding:10px 0}
+  .bf-months-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px}
+  .bf-month-item{padding:8px 10px;font-size:12.5px}
+  .dlg-wide{max-width:100vw !important;margin:8px !important}
+  .receipt-paper{padding:20px !important}
+  .imp-drop{padding:20px !important}
+  .imp-example-grid{grid-template-columns:1fr !important}
+  .dlg .form-grid{gap:12px}
+  .ob-calc-card{padding:14px !important}
 }
 
 @media (max-width:380px){
-  .tab{font-size:9px;padding:6px 1px 8px;min-height:46px}
-  .tab::before{width:18px;height:18px}
-  .stat-value{font-size:18px}
-  .stats-3{grid-template-columns:1fr 1fr}
-  .oa-card{padding:10px 12px}
-  .oa-icon{width:30px;height:30px}
+  .oa-card{padding:12px !important}
+  .oa-card .oa-icon{width:32px !important;height:32px !important}
+  .oa-text b{font-size:12.5px !important}
+  .oa-text span{font-size:11.5px !important}
 }
