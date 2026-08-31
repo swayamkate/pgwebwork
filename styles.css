@@ -555,14 +555,7 @@ h2{font-size:16.5px;letter-spacing:-.018em;font-weight:650;line-height:1.35;marg
 
 /* ========== PERFORMANCE ========== */
 /* GPU-accelerate animated properties for smoother 60fps rendering. */
-.stat,.room,.bed,.card,.btn-primary,.btn-ghost,.icon-btn,.oa-card,.tab,.pill,
-.auth-left,.auth-right,.auth-feature{
-  will-change:transform
-}
-/* containment tells the browser this element's internals don't affect layout outside */
-.card,.stat,.room,.feed li,.paylist li{
-  contain:layout style
-}
+/* No will-change or contain on scrollable ancestors — breaks iOS scroll */
 /* Smooth scrolling with momentum on iOS */
 html{
   -webkit-overflow-scrolling:touch;
@@ -573,7 +566,7 @@ html{
   overscroll-behavior-x:contain
 }
 /* Reduce paint area for expensive elements */
-.stat::after,.room::after{contain:layout style paint}
+/* Removed contain from stat/room — was breaking iOS scroll */
 /* Debounce transition on hover to prevent jank on rapid mouse movement */
 .stat,.room,.bed{transition:transform .25s cubic-bezier(.2,.8,.3,1),box-shadow .25s ease,border-color .25s ease}
 
