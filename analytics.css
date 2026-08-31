@@ -1,0 +1,162 @@
+/* PG Manager — Analytics Components */
+
+/* ---- Heatmap ---- */
+.heatmap-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.heatmap-header h3{font-size:16px;font-weight:650;margin:0}
+.heatmap-days-header{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px}
+.heatmap-days-header span{text-align:center;font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase}
+.heatmap-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.heatmap-cell{
+  aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:2px;
+  border:1px solid var(--border);background:var(--surface-2);
+  font-size:12px;font-weight:600;transition:transform .15s ease;
+  cursor:default;position:relative;
+}
+.heatmap-cell:hover{transform:scale(1.08);z-index:1}
+.heatmap-empty{background:transparent;border:none}
+.heatmap-future{background:var(--surface-2);opacity:.4}
+.heatmap-today{border:2px solid var(--brand);box-shadow:0 0 0 3px var(--ring)}
+.heatmap-none{background:var(--surface-2)}
+.heatmap-low{background:#dcfce7;border-color:#86efac}
+.heatmap-mid{background:#fef08a;border-color:#fde047}
+.heatmap-high{background:#bbf7d0;border-color:#4ade80}
+.heatmap-day{font-size:12px;font-weight:700;color:var(--text)}
+.heatmap-amt{font-size:9px;color:var(--green);font-weight:600}
+.heatmap-legend{display:flex;gap:14px;margin-top:12px;justify-content:center}
+.heatmap-legend span{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.heatmap-legend .key{width:12px;height:12px;border-radius:4px}
+.heatmap-low{background:#dcfce7}.heatmap-mid{background:#fef08a}.heatmap-high{background:#bbf7d0}.heatmap-none{background:var(--surface-2)}
+
+/* ---- P&L Statement ---- */
+.pnl-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.pnl-header h3{font-size:16px;font-weight:650;margin:0}
+.pnl-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px}
+.pnl-card{
+  background:var(--surface-2);border:1px solid var(--border);border-radius:14px;
+  padding:16px;display:flex;flex-direction:column;gap:4px;
+}
+.pnl-label{font-size:11px;font-weight:600;text-transform:uppercase;color:var(--muted);letter-spacing:.03em}
+.pnl-value{font-size:22px;font-weight:700;color:var(--text);letter-spacing:-.02em}
+.pnl-sub{font-size:11px;color:var(--muted)}
+.pnl-income{border-left:3px solid var(--green)}
+.pnl-income .pnl-value{color:var(--green)}
+.pnl-expense{border-left:3px solid var(--red)}
+.pnl-expense .pnl-value{color:var(--red)}
+.pnl-profit{border-left:3px solid var(--brand)}
+.pnl-profit .pnl-value{color:var(--brand)}
+.pnl-loss{border-left:3px solid var(--red)}
+.pnl-loss .pnl-value{color:var(--red)}
+.pnl-breakdown{margin-top:4px}
+.pnl-breakdown h4{font-size:13px;font-weight:650;margin:0 0 10px;color:var(--muted)}
+.pnl-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.pnl-cat{font-size:12px;font-weight:550;min-width:90px;color:var(--text)}
+.pnl-bar-wrap{flex:1;height:8px;border-radius:99px;background:var(--surface-3);overflow:hidden}
+.pnl-bar{height:100%;border-radius:99px;background-image:var(--brand-grad);transition:width .3s ease}
+.pnl-cat-amt{font-size:12px;font-weight:600;color:var(--text);min-width:100px;text-align:right}
+.pnl-cat-amt small{color:var(--muted);font-weight:400}
+
+/* ---- Revenue per Room ---- */
+.rev-header{margin-bottom:14px}
+.rev-header h3{font-size:16px;font-weight:650;margin:0}
+.rev-list{display:flex;flex-direction:column;gap:10px}
+.rev-row{display:flex;align-items:center;gap:12px}
+.rev-rank{font-size:16px;min-width:30px;text-align:center;font-weight:700}
+.rev-info{min-width:120px}
+.rev-name{display:block;font-size:13px;font-weight:650;color:var(--text)}
+.rev-meta{display:block;font-size:11px;color:var(--muted)}
+.rev-bar-wrap{flex:1;height:8px;border-radius:99px;background:var(--surface-3);overflow:hidden}
+.rev-bar{height:100%;border-radius:99px;background-image:var(--brand-grad);transition:width .4s ease}
+.rev-amt{font-size:13px;font-weight:700;color:var(--text);min-width:80px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* ---- Payment Behavior ---- */
+.pb-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.pb-header h3{font-size:16px;font-weight:650;margin:0}
+.pb-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.pb-card{
+  background:var(--surface-2);border:1px solid var(--border);border-radius:12px;
+  padding:14px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px;
+}
+.pb-count{font-size:24px;font-weight:700}
+.pb-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.pb-desc{font-size:10px;color:var(--muted)}
+.pb-excellent .pb-count{color:var(--green)}.pb-excellent{border-left:3px solid var(--green)}
+.pb-good .pb-count{color:var(--brand)}.pb-good{border-left:3px solid var(--brand)}
+.pb-fair .pb-count{color:var(--amber)}.pb-fair{border-left:3px solid var(--amber)}
+.pb-poor .pb-count{color:var(--red)}.pb-poor{border-left:3px solid var(--red)}
+.pb-list{display:flex;flex-direction:column;gap:6px}
+.pb-row{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border-radius:10px;background:var(--surface-2);border:1px solid var(--border);
+}
+.pb-icon{font-size:18px;flex-shrink:0}
+.pb-info{flex:1;min-width:0}
+.pb-name{display:block;font-size:13px;font-weight:600;color:var(--text)}
+.pb-room{display:block;font-size:11px;color:var(--muted)}
+.pb-stats{text-align:right;min-width:100px}
+.pb-paid{display:block;font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px}
+.pb-ratio-bar{height:4px;border-radius:99px;background:var(--surface-3);overflow:hidden}
+.pb-ratio-fill{height:100%;border-radius:99px;background-image:var(--brand-grad)}
+.pb-excellent .pb-ratio-fill{background:var(--green)}
+.pb-good .pb-ratio-fill{background:var(--brand)}
+.pb-fair .pb-ratio-fill{background:var(--amber)}
+.pb-poor .pb-ratio-fill{background:var(--red)}
+
+/* ---- Staff Attendance ---- */
+.staff-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.staff-header h3{font-size:16px;font-weight:650;margin:0}
+.staff-today h4,.staff-history h4{font-size:13px;font-weight:650;margin:0 0 10px;color:var(--muted)}
+.staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.staff-card{
+  background:var(--surface-2);border:1px solid var(--border);border-radius:12px;
+  padding:14px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;
+}
+.staff-present{border-left:3px solid var(--green)}
+.staff-absent{border-left:3px solid var(--red)}
+.staff-avatar{
+  width:36px;height:36px;border-radius:50%;background:var(--brand-soft);color:var(--brand);
+  font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;
+}
+.staff-name{font-size:13px;font-weight:600;color:var(--text)}
+.staff-role{font-size:11px;color:var(--muted)}
+.staff-actions{display:flex;gap:6px;margin-top:4px}
+.staff-btn{
+  border:1px solid var(--border);background:var(--surface);border-radius:8px;
+  padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;
+  transition:all .15s ease;color:var(--muted);
+}
+.staff-btn:hover{border-color:var(--brand);color:var(--brand)}
+.staff-btn.active{background:var(--green-soft);border-color:var(--green);color:var(--green)}
+.staff-btn.active.absent{background:var(--red-soft);border-color:var(--red);color:var(--red)}
+.staff-btn.remove{border-color:transparent;color:var(--faint)}
+.staff-btn.remove:hover{color:var(--red);background:var(--red-soft)}
+.staff-history{margin-top:20px}
+.staff-table-wrap{overflow-x:auto}
+.staff-table{width:100%;border-collapse:collapse;font-size:12px}
+.staff-table th{text-align:center;padding:8px;font-size:10px;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--border)}
+.staff-table td{text-align:center;padding:8px;border-bottom:1px solid var(--border)}
+.staff-tname{text-align:left !important;font-weight:600}
+.staff-p{color:var(--green);font-weight:700}
+.staff-a{color:var(--red);font-weight:700}
+.staff-na{color:var(--faint)}
+
+/* ---- Analytics responsive ---- */
+@media (max-width:640px){
+  .pnl-summary{grid-template-columns:1fr 1fr;gap:8px}
+  .pnl-card{padding:12px}
+  .pnl-value{font-size:18px}
+  .pb-summary{grid-template-columns:1fr 1fr;gap:8px}
+  .pb-card{padding:10px}
+  .pb-count{font-size:20px}
+  .staff-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .heatmap-grid{gap:3px}
+  .heatmap-cell{border-radius:8px}
+  .rev-row{gap:8px}
+  .rev-info{min-width:80px}
+  .rev-amt{min-width:60px;font-size:12px}
+}
+@media (max-width:380px){
+  .pnl-summary{grid-template-columns:1fr}
+  .pb-summary{grid-template-columns:1fr 1fr}
+  .staff-grid{grid-template-columns:1fr}
+}

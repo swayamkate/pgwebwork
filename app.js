@@ -1329,14 +1329,17 @@ function renderAll() {
   
   /* Map views to their render functions */
   var viewFns = {
-    dashboard: [renderGraph, renderRentStatus, renderFloors, renderFeed, renderExpDashboard],
+    dashboard: [renderGraph, renderRentStatus, renderFloors, renderFeed, renderExpDashboard,
+                PGAnalytics.renderHeatmap, PGAnalytics.renderRevenuePerRoom,
+                PGAnalytics.renderPaymentBehavior, PGAnalytics.renderPnL],
     beds:      [renderRooms],
     tenants:   [renderTenants],
     rent:      [renderRent],
     expenses:  [renderExpenses],
     complaints:[renderComplaints],
     owner:     [renderOwner, renderSettings, renderRates, applyFloorSetting,
-                renderOwnerActions, renderDeposits, renderRules, renderDataActions]
+                renderOwnerActions, renderDeposits, renderRules, renderDataActions,
+                PGAnalytics.renderStaffAttendance]
   };
   
   /* Render active tab immediately */
@@ -1854,6 +1857,30 @@ document.addEventListener("click", (e) => {
         toast(err && err.message ? err.message : "Could not restore from the sheet.", "error");
       });
     });
+  } else if (act === "whatsapp-bulk") {
+    var s = PGStore.state();
+    var tenantsWithPhone = [];
+    (s.rooms || []).forEach(function (room) {
+      (room.beds || []).forEach(function (bed) {
+        if (bed && bed.phone) {
+          tenantsWithPhone.push({ name: bed.name, phone: bed.phone, rent: bed.rent || room.rent, room: room.no });
+        }
+      });
+    });
+    if (!tenantsWithPhone.length) {
+      toast("No tenants with phone numbers found", "error");
+    } else {
+      var msg = "Send rent reminders to " + tenantsWithPhone.length + " tenants via WhatsApp?";
+      confirmAsync({ type: 'info', title: 'WhatsApp Reminders', message: msg, okText: 'Send All', icon: '📱' }).then(function (ok) {
+        if (!ok) return;
+        tenantsWithPhone.forEach(function (t, i) {
+          setTimeout(function () {
+            PGAnalytics.sendWhatsAppReminder(t.phone, t.name, t.rent, t.room);
+          }, i * 800);
+        });
+        toast("Opening WhatsApp for " + tenantsWithPhone.length + " tenants", "success");
+      });
+    }
   } else if (act === "set-rents") {
     openSetRents();
   } else if (act === "rate-card") {

@@ -16,6 +16,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="styles.css?v=13" />
 <link rel="stylesheet" href="manage.css?v=13" />
+<link rel="stylesheet" href="analytics.css" />
 <style>
 html.auth-pending body{visibility:hidden}
 /* Loading skeleton — shown while JS boots */
@@ -186,6 +187,37 @@ html.auth-pending body{visibility:hidden}
         </div>
         <div id="exp-dashboard"></div>
       </div>
+    </div>
+
+    <!-- Export PDF + WhatsApp Reminder buttons -->
+    <div class="card" style="margin-top:18px">
+      <div class="card-head">
+        <h2>Reports & Communication</h2>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn-ghost" type="button" onclick="PGAnalytics.exportPDF()" style="flex:1;min-width:150px">📄 Export to PDF</button>
+        <button class="btn-ghost" type="button" data-act="whatsapp-bulk" style="flex:1;min-width:150px">📱 Send Rent Reminders</button>
+      </div>
+    </div>
+
+    <!-- Collection Heatmap -->
+    <div class="card" style="margin-top:18px">
+      <div id="heatmap-container"></div>
+    </div>
+
+    <!-- Revenue per Room -->
+    <div class="card" style="margin-top:18px">
+      <div id="revenue-room-container"></div>
+    </div>
+
+    <!-- Payment Behavior -->
+    <div class="card" style="margin-top:18px">
+      <div id="payment-behavior-container"></div>
+    </div>
+
+    <!-- P&L Statement -->
+    <div class="card" style="margin-top:18px">
+      <div id="pnl-container"></div>
     </div>
 
     <div class="backup is-off" id="backup">
@@ -370,6 +402,11 @@ html.auth-pending body{visibility:hidden}
         <button class="link-btn" type="button" data-act="edit-rules">Edit rules</button>
       </div>
       <div id="rules-display"></div>
+    </div>
+
+    <!-- Staff Attendance -->
+    <div class="card">
+      <div id="staff-attendance-container"></div>
     </div>
 
     <!-- Data Management -->
@@ -894,6 +931,7 @@ html.auth-pending body{visibility:hidden}
   </div>
 </dialog>
 
+<script src="analytics.js"></script>
 <script src="app.js?v=13"></script>
 <script src="import.js?v=13"></script>
 <script src="profile.js?v=13"></script>
