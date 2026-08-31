@@ -130,6 +130,12 @@
       var seed = thisMonth();
       if (!months.length && b.paid) { months = [seed]; }
 
+      /* Vacant marker: empty name means the bed slot exists but no tenant */
+      if (!b.name) {
+        room.beds[b.bed_index] = null;
+        return;
+      }
+
       room.beds[b.bed_index] = {
         name: b.name || "",
         phone: b.phone || "",
@@ -226,29 +232,54 @@
     });
 
     /* --- Beds --- */
+    /* Null beds are "vacant markers" — they preserve room structure in
+       Supabase so the slot isn't deleted. We write them with empty name
+       and all tenant fields cleared. */
     var bedRows = [];
     (state.rooms || []).forEach(function (room) {
       (room.beds || []).forEach(function (bed, i) {
-        if (!bed) { return; }
-        bedRows.push({
-          id: room.id + "-b" + i,
-          room_id: room.id,
-          bed_index: i,
-          name: bed.name || "",
-          phone: bed.phone || "",
-          joined: bed.joined || null,
-          leaving: bed.leaving || null,
-          note: bed.note || "",
-          collect: bed.collect || 0,
-          rent: bed.rent != null ? bed.rent : null,
-          deposit: bed.deposit || 0,
-          id_type: bed.idType || "",
-          id_number: bed.idNumber || "",
-          emergency_contact: bed.emergencyContact || "",
-          workplace: bed.workplace || "",
-          on_notice: bed.onNotice || false,
-          paid_months: bed.paidMonths || []
-        });
+        if (bed) {
+          bedRows.push({
+            id: room.id + "-b" + i,
+            room_id: room.id,
+            bed_index: i,
+            name: bed.name || "",
+            phone: bed.phone || "",
+            joined: bed.joined || null,
+            leaving: bed.leaving || null,
+            note: bed.note || "",
+            collect: bed.collect || 0,
+            rent: bed.rent != null ? bed.rent : null,
+            deposit: bed.deposit || 0,
+            id_type: bed.idType || "",
+            id_number: bed.idNumber || "",
+            emergency_contact: bed.emergencyContact || "",
+            workplace: bed.workplace || "",
+            on_notice: bed.onNotice || false,
+            paid_months: bed.paidMonths || []
+          });
+        } else {
+          /* Vacant slot — keep the bed row alive in Supabase */
+          bedRows.push({
+            id: room.id + "-b" + i,
+            room_id: room.id,
+            bed_index: i,
+            name: "",
+            phone: "",
+            joined: null,
+            leaving: null,
+            note: "",
+            collect: 0,
+            rent: null,
+            deposit: 0,
+            id_type: "",
+            id_number: "",
+            emergency_contact: "",
+            workplace: "",
+            on_notice: false,
+            paid_months: []
+          });
+        }
       });
     });
 
@@ -307,17 +338,7 @@
     }
 
     await safe("rooms", function () { if (roomRows.length) return upsertAll("rooms", roomRows); });
-    await safe("beds", async function () {
-      /* First delete beds that are no longer in state (checked out) */
-      try {
-        var existingBeds2 = await c.from("beds").select("id").eq("owner_id", accountId);
-        var incomingIds2 = {};
-        bedRows.forEach(function (b) { incomingIds2[b.id] = true; });
-        var removeBeds = (existingBeds2.data || []).map(function (b) { return b.id; }).filter(function (id) { return !incomingIds2[id]; });
-        if (removeBeds.length) await c.from("beds").delete().in("id", removeBeds);
-      } catch (e) { /* best-effort */ }
-      if (bedRows.length) return upsertAll("beds", bedRows);
-    });
+    await safe("beds", function () { if (bedRows.length) return upsertAll("beds", bedRows); });
     await safe("expenses", function () { if (expenseRows.length) return upsertAll("expenses", expenseRows); });
     await safe("rates", function () { if (rateRows.length) return upsertAll("rates", rateRows); });
     await safe("complaints", function () { if (complaintRows.length) return upsertAll("complaints", complaintRows); });
