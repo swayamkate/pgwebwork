@@ -2,154 +2,179 @@
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Create your login — PG Manager</title>
-<meta name="theme-color" content="#000000" />
+<meta name="theme-color" content="#050a18" />
 <meta name="robots" content="noindex, nofollow" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <script>try{var t=localStorage.getItem("pgTheme");if(t){document.documentElement.dataset.theme=t;}}catch(e){}</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%232563EB'/%3E%3Cg fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 18v-8'/%3E%3Cpath d='M4 14h16v4'/%3E%3Cpath d='M20 14v-1.5a2 2 0 0 0-2-2h-7V14'/%3E%3C/g%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css?v=11" />
-<link rel="stylesheet" href="mobile-auth.css?v=11" />
+<link rel="stylesheet" href="styles.css?v=12" />
+<link rel="stylesheet" href="auth2.css?v=12" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <script src="auth.js"></script>
 </head>
-<body class="auth-body">
+<body class="auth2-body">
 
-<main class="auth">
-  <!-- Left panel — branding + features -->
-  <div class="auth-left">
-    <div class="auth-grid"></div>
-    <div class="auth-left-content">
-      <span class="brand-mark auth-mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18v-8"/><path d="M4 14h16v4"/><path d="M20 14v-1.5a2 2 0 0 0-2-2h-7V14"/></svg>
-      </span>
-      <h1>Start managing<br/><span>your property.</span></h1>
-      <p class="auth-tagline">Create your account and take control of your PG's finances in minutes. No spreadsheets, no confusion.</p>
+<!-- Animated mesh background -->
+<div class="auth2-bg" aria-hidden="true">
+  <div class="auth2-orb auth2-orb--1"></div>
+  <div class="auth2-orb auth2-orb--2"></div>
+  <div class="auth2-orb auth2-orb--3"></div>
+  <div class="auth2-mesh"></div>
+  <div class="auth2-noise"></div>
+</div>
 
-      <div class="auth-features">
-        <div class="auth-feature">
-          <div class="auth-feature-icon">
+<div class="auth2-wrap">
+
+  <!-- Desktop hero panel -->
+  <aside class="auth2-hero" aria-hidden="true">
+    <div class="auth2-hero-inner">
+      <div class="auth2-hero-badge">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <span>Free for small PGs &middot; No card needed</span>
+      </div>
+      <h1 class="auth2-hero-title">
+        Start managing<br/>
+        <span class="auth2-gradient-text">your property.</span>
+      </h1>
+      <p class="auth2-hero-desc">Create your account and take control of your PG's finances in minutes. No spreadsheets, no confusion.</p>
+
+      <div class="auth2-hero-features">
+        <div class="auth2-hero-feat">
+          <div class="auth2-hero-feat-icon">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 8h5"/><path d="M9.5 10.5h5"/><path d="M13 10.5a2.5 2.5 0 0 1-2.5 2.5H9.5l4 4"/></svg>
           </div>
-          <div class="auth-feature-text">
-            <b>₹ Revenue Tracking</b>
-            <span>Every rupee accounted for — rent, deposits, advance payments.</span>
-          </div>
+          <div><b>Revenue Tracking</b><br/><span>Every rupee accounted for</span></div>
         </div>
-        <div class="auth-feature">
-          <div class="auth-feature-icon">
+        <div class="auth2-hero-feat">
+          <div class="auth2-hero-feat-icon">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/></svg>
           </div>
-          <div class="auth-feature-text">
-            <b>Tenant Profiles</b>
-            <span>Complete history — payments, rent ledger, activity log.</span>
-          </div>
+          <div><b>Tenant Profiles</b><br/><span>Complete payment history &amp; ledger</span></div>
         </div>
-        <div class="auth-feature">
-          <div class="auth-feature-icon">
+        <div class="auth2-hero-feat">
+          <div class="auth2-hero-feat-icon">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h12v17l-2.5-1.5-2.5 1.5-2.5-1.5L8 20.5 6 20.5Z"/><path d="M9.5 8.5h5"/><path d="M9.5 12h5"/></svg>
           </div>
-          <div class="auth-feature-text">
-            <b>Receipts & Reports</b>
-            <span>Professional receipts and financial reports in one click.</span>
-          </div>
+          <div><b>Receipts &amp; Reports</b><br/><span>Professional docs in one click</span></div>
         </div>
-        <div class="auth-feature">
-          <div class="auth-feature-icon">
+        <div class="auth2-hero-feat">
+          <div class="auth2-hero-feat-icon">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           </div>
-          <div class="auth-feature-text">
-            <b>Secure & Private</b>
-            <span>Your data stays yours. Encrypted, role-based access.</span>
-          </div>
+          <div><b>Secure &amp; Private</b><br/><span>Encrypted, role-based access</span></div>
         </div>
       </div>
-      <div class="auth-trust" style="margin-top:28px;display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.05);animation:auth-fade-in .6s ease .8s both">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#60A5FA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        <span style="color:#94A3B8;font-size:12.5px;font-weight:500">Free for small PGs · No card needed</span>
-      </div>
     </div>
-  </div>
+  </aside>
 
-  <!-- Right panel — signup form -->
-  <div class="auth-right">
-    <div class="auth-top">
-      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch colour theme" title="Switch colour theme">
-        <svg class="i-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></svg>
-        <svg class="i-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+  <!-- Right — Signup form -->
+  <div class="auth2-panel">
+    <div class="auth2-panel-top">
+      <button class="auth2-theme-btn" id="theme-toggle" type="button" aria-label="Switch theme">
+        <svg class="i-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
       </button>
     </div>
 
-    <div class="auth-card">
-      <span class="brand-mark auth-mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18v-8"/><path d="M4 14h16v4"/><path d="M20 14v-1.5a2 2 0 0 0-2-2h-7V14"/></svg>
-      </span>
-
-      <h1 id="head">Create your login</h1>
-      <p class="auth-sub" id="sub">Create your account to start managing your PG</p>
-
-      <p class="auth-ok" id="confirm-note" role="status" hidden></p>
-
-      <form id="signup-form" novalidate>
-        <div class="field">
-          <label for="name">Your name</label>
-          <input id="name" name="name" type="text" autocomplete="name" placeholder="Full name" required />
-        </div>
-
-        <div class="field">
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="you@example.com" required />
-          <p class="hint">You can add a shorter username later.</p>
-        </div>
-
-        <div class="field" id="invite-field" hidden>
-          <label for="invite">Invite code <span style="color:var(--muted)">(optional)</span></label>
-          <input id="invite" name="invite" type="text" class="code-input" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19" />
-          <p class="hint">Leave empty if you were not given a code.</p>
-        </div>
-
-        <div class="field">
-          <label for="password">Password</label>
-          <span class="pw-wrap">
-            <input id="password" name="password" type="password" autocomplete="new-password" placeholder="At least 10 characters" required />
-            <button class="pw-eye" id="pw-eye" type="button" aria-label="Show password" aria-pressed="false" title="Show password">
-              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-          </span>
-          <span class="pw-meter" id="pw-meter" hidden>
-            <span class="pw-bar"><i id="pw-fill"></i></span>
-            <span class="pw-label" id="pw-label"></span>
-          </span>
-          <p class="hint">Ten characters or more, mixing cases and numbers.</p>
-        </div>
-
-        <div class="field">
-          <label for="confirm">Repeat password</label>
-          <input id="confirm" name="confirm" type="password" autocomplete="new-password" placeholder="Type it once more" required />
-        </div>
-
-        <p class="auth-error" id="error" role="alert" hidden></p>
-
-        <button class="btn-primary" id="submit" type="submit">Create account</button>
-      </form>
-
-      <p class="auth-alt">Already have a login? <a href="login.html">Sign in</a></p>
-
-      <div class="auth-hint" id="hint-box">
-        <b>🌐 Public registration</b>
-        <span>Anyone can create an account. Each person gets their own workspace.</span>
+    <div class="auth2-mobile-logo">
+      <div class="auth2-mobile-logo-icon">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18v-8"/><path d="M4 14h16v4"/><path d="M20 14v-1.5a2 2 0 0 0-2-2h-7V14"/></svg>
       </div>
     </div>
 
-    <p class="auth-foot">PG Manager · v1.0</p>
+    <div class="auth2-card">
+      <div class="auth2-card-header">
+        <h1 id="head">Create your login</h1>
+        <p id="sub">Create your account to start managing your PG</p>
+      </div>
+
+      <p class="auth2-ok" id="confirm-note" role="status" hidden></p>
+
+      <form id="signup-form" class="auth2-form" novalidate>
+        <div class="auth2-field">
+          <label for="name">Your name</label>
+          <div class="auth2-input-wrap">
+            <svg class="auth2-input-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>
+            <input id="name" name="name" type="text" autocomplete="name" placeholder="Full name" required />
+          </div>
+        </div>
+
+        <div class="auth2-field">
+          <label for="email">Email</label>
+          <div class="auth2-input-wrap">
+            <svg class="auth2-input-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M22 7l-10 6L2 7"/></svg>
+            <input id="email" name="email" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="you@example.com" required />
+          </div>
+          <p class="auth2-hint">You can add a shorter username later.</p>
+        </div>
+
+        <div class="auth2-field" id="invite-field" hidden>
+          <label for="invite">Invite code <span class="auth2-opt">(optional)</span></label>
+          <div class="auth2-input-wrap">
+            <svg class="auth2-input-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input id="invite" name="invite" type="text" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19" class="auth2-code-input" />
+          </div>
+          <p class="auth2-hint">Leave empty if you were not given a code.</p>
+        </div>
+
+        <div class="auth2-field">
+          <label for="password">Password</label>
+          <div class="auth2-input-wrap">
+            <svg class="auth2-input-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input id="password" name="password" type="password" autocomplete="new-password" placeholder="At least 10 characters" required />
+            <button class="auth2-eye" id="pw-eye" type="button" aria-label="Show password" aria-pressed="false">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <span class="auth2-meter" id="pw-meter" hidden>
+            <span class="auth2-meter-bar"><i id="pw-fill"></i></span>
+            <span class="auth2-meter-label" id="pw-label"></span>
+          </span>
+          <p class="auth2-hint">Ten characters or more, mixing cases and numbers.</p>
+        </div>
+
+        <div class="auth2-field">
+          <label for="confirm">Repeat password</label>
+          <div class="auth2-input-wrap">
+            <svg class="auth2-input-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <input id="confirm" name="confirm" type="password" autocomplete="new-password" placeholder="Type it once more" required />
+          </div>
+        </div>
+
+        <p class="auth2-error" id="error" role="alert" hidden></p>
+
+        <button class="auth2-btn" id="submit" type="submit">
+          <span class="auth2-btn-text">Create account</span>
+          <span class="auth2-btn-loading" hidden>
+            <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="50" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.8s" repeatCount="indefinite"/></svg>
+          </span>
+        </button>
+      </form>
+
+      <div class="auth2-divider"><span>or</span></div>
+
+      <p class="auth2-alt">Already have a login? <a href="login.html">Sign in</a></p>
+
+      <div class="auth2-footer-info" id="hint-box">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <span>Public registration &middot; Each person gets their own workspace</span>
+      </div>
+    </div>
+
+    <p class="auth2-foot">PG Manager &middot; v1.0</p>
   </div>
-</main>
+</div>
 
 <script>
   var form = document.getElementById("signup-form");
   var error = document.getElementById("error");
   var submit = document.getElementById("submit");
+  var btnText = submit.querySelector(".auth2-btn-text");
+  var btnLoad = submit.querySelector(".auth2-btn-loading");
   var nameEl = document.getElementById("name");
   var emailEl = document.getElementById("email");
   var inviteEl = document.getElementById("invite");
@@ -163,7 +188,9 @@
 
   function busy(on) {
     submit.disabled = on;
-    submit.textContent = on ? "Creating\u2026" : (isFirst ? "Create owner account" : "Create account");
+    btnText.textContent = on ? "Creating\u2026" : (isFirst ? "Create owner account" : "Create account");
+    btnText.hidden = false;
+    btnLoad.hidden = !on;
   }
 
   function fail(msg, focusOn) {
@@ -183,8 +210,8 @@
       inviteEl.value = "";
       inviteField.hidden = true;
       document.getElementById("hint-box").innerHTML =
-        "<b>One time only<\/b><span>Once this account exists, every further signup creates a staff account.<\/span>";
-      submit.textContent = "Create owner account";
+        '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><span>One time only &middot; Further signups create staff accounts</span>';
+      submit.querySelector(".auth2-btn-text").textContent = "Create owner account";
     }
   }, function () {});
 
