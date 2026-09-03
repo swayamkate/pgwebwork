@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /config.js
+Disallow: /supabase-storage.js
+
+Sitemap: https://pg.swayamkate.com/sitemap.xml
+
+# PG Manager — Free Hostel & PG Management App
+# https://pg.swayamkate.com/

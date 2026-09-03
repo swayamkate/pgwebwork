@@ -1,0 +1,34 @@
+# PG Manager
+
+> Free web app for PG (Paying Guest) and Hostel management. Handles beds, tenants, rent collection, expenses, complaints, analytics, and staff attendance.
+
+## What it does
+
+PG Manager is a complete management dashboard for PG/Hostel owners. It runs entirely in the browser with Supabase as the backend.
+
+### Core Features
+- **Bed & Room Management**: Add rooms, set beds per room, assign individual bed rents
+- **Tenant Management**: Add tenants, assign beds, track check-in/check-out dates, phone numbers
+- **Rent Tracking**: Monthly rent ledger per tenant, mark payments, track due amounts and security deposits
+- **Expense Tracking**: Categorize expenses (electricity, food, maintenance, etc.), monthly summaries
+- **Complaints**: Log and resolve tenant complaints with priority levels
+- **Dashboard Analytics**: Collection heatmap, revenue per room, payment behavior, profit & loss statements
+- **Staff Attendance**: Track housekeeping/maintenance staff daily presence
+- **Data Import**: Smart import from Excel/CSV/Google Sheets — auto-detects column mappings
+- **Export**: Generate PDF reports, send WhatsApp rent reminders
+- **Dark/Light Theme**: Full dark and light mode support
+- **Mobile-First**: Bottom tab navigation on phone, dashboard grid on desktop
+
+### Tech Stack
+- Frontend: Vanilla HTML/CSS/JavaScript (no framework)
+- Backend: Supabase (PostgreSQL + Auth + Realtime)
+- Hosting: Cloudflare Pages
+- Auth: Email/password via Supabase Auth
+
+## URLs
+- Main app: https://pg.swayamkate.com/
+- Login: https://pg.swayamkate.com/login.html
+- Sign up: https://pg.swayamkate.com/signup.html
+
+## Contact
+Built for personal PG management. Contact the developer via GitHub: https://github.com/swayamkate
